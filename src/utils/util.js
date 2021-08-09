@@ -109,4 +109,4 @@ export function arbitraryFree(input, func){
   }
 }
 
-export const DEBUG = true|| process.env.NODE_ENV !== 'production';
+export const DEBUG = true || process.env.NODE_ENV !== 'production';

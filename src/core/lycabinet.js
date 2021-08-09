@@ -6,7 +6,7 @@
  */
 
 import * as _STATUS from '../utils/status.js';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject } from '../utils/util.js';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG } from '../utils/util.js';
 
 /**
  * Init core.
@@ -155,7 +155,7 @@ export function InitCore(Lycabinet){
     // Local clear
     let localClear = ()=>{
       if(onCloud && !concurrent ){
-        console.log("退出执行本地");
+        DEBUG && console.log("[Lycabinet]: The local clear action is ignored by options: concurrence=false.");
         return;
       }
       const localApi = this.options.localInterface;
@@ -201,7 +201,7 @@ export function InitCore(Lycabinet){
     let localLoad = ()=>{
       let localTemp = null;
       if(onCloud && !concurrent ){
-        console.log("退出执行");
+        DEBUG && console.log("[Lycabinet]: The local load action is ignored by options: concurrence=false.");
         return;
       }
       const localApi = this.options.localInterface;
@@ -245,7 +245,8 @@ export function InitCore(Lycabinet){
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
     if( check ){
-      this.lazySave(true);
+      DEBUG && console.log(`The 'save' manipulation is deserted for busy. Set 'saveMutex' false to disable it.`);
+      this.lazySave(onCloud, concurrent);
       return null;
     }
     
@@ -257,7 +258,7 @@ export function InitCore(Lycabinet){
     // Local save 
     let localSave = ()=>{
       if(onCloud && !concurrent ){
-        console.log("退出执行");
+        DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrence=false.");
         return;
       }
       const localApi = this.options.localInterface;
@@ -290,25 +291,32 @@ export function InitCore(Lycabinet){
   
   /**
    * Lazy methods support.
+   * The params is the same to save methods.
    */
   Lycabinet.prototype.lazySave = function(){
     var lastTime = 0;
-    return function(){
+    return function(...params){
       var nowTime = new Date().getTime();
       // The gap is not so accurate but enough.
       let judge = nowTime - lastTime > this.options.lazyPeriod;
       this._trigger("lazySave", judge);
       if (judge) {
-        this.save();
+        // Use default settings
+        this.save(...params);
         lastTime = nowTime;
       }
       return this;
     }
   }();
 
-  // debounce 参数仅在结合 laction JS 时起作用
-  Lycabinet.prototype.lazySet = function(key, value){
-    this.set(key, value).lazySave();
+  /**
+   * Just calling lazySave after save called.
+   * @param {*} key 
+   * @param {*} value 
+   * @param {...any} params parameters to lazySave. 
+   */
+  Lycabinet.prototype.lazySet = function(key, value, ...params){
+    this.set(key, value).lazySave(...params);
     return this;
   }
 }

@@ -26,9 +26,9 @@ export function initImbedding(Lycabinet){
       );
     });
     // Rewrite lazy methods with laction instances. And give it better performance and even visualizaztion.
-    Lycabinet.prototype.lazySave = function(){
+    Lycabinet.prototype.lazySave = function(orbitId=-1){
       // bubble with auto period throttle and debounce.
-      lactionIns.bubble(this.__root+'_lazysave');
+      lactionIns.bubble(`${this.__root}_lazysave`, orbitId);
       return this;
     };
   };

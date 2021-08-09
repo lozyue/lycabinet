@@ -36,8 +36,10 @@ export function InitEventSystem(Lycabinet){
 
   // for Debug
   DEBUG && (Lycabinet.prototype._setlog = function(){
-    Object.keys(subscriptions).forEach(item=>{
-      let testHandle = subscriptions[item].logHandle;
+    const presets = ['created','mounted', 'lazySave', 'getItem', 'removeItem', 'saved', 'beforeSave', 'beforeLoad', 'loaded', 'beforeClear', 'cleared', 'setItem'];
+
+    new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{
+      let testHandle = subscriptions[item] && subscriptions[item].logHandle;
       if(testHandle){
         this._off(item, testHandle)
       }

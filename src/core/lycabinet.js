@@ -288,6 +288,32 @@ export function InitCore(Lycabinet){
     return this;
   }
   
+  /**
+   * Map methods support.
+   * Iterate the first hierarchy with callback.
+   * @param {Function: (item, index)=>any }} callback with two params
+   */
+  Lycabinet.prototype.forEach = function(callback){
+    let item, index = 0;
+    for(let key in this.__storage){
+      item = this.__storage[key];
+      callback(item, index++); // only two params.
+    }
+  }
+
+  /**
+   * Foreach methods support.
+   * Iterate the first hierarchy with callback.
+   * @param {Function: (item, index)=>any }} callback  with two params
+   */
+  Lycabinetl.prototype.map = function(callback){
+    let item, index = 0;
+    for(let key in this.__storage){
+      item = this.__storage[key];
+      this.__storage[key] = callback(item, index++); // only two params.
+    }
+  }
+
   
   /**
    * Lazy methods support.

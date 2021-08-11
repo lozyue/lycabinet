@@ -190,33 +190,17 @@ lycabinet_instance.save();
 
 #### lycabinet.light.js
 
-(改 --- 以下内容作废)
-如果你仅仅只是想使用简单的保存增改功能，那一个发布订阅系统确实是不必要的。
+如果你仅仅只是想使用简单的增改保存功能，那一个发布订阅系统确实是不必要的。
 
 我们也提供更轻小的版本 lycabinet.light.js
 
 它只包含核心方法，适合需要大量创建实例的场景
 
-包括以下方法
-```js
-lycabinet.set;
-lycabinet.get;
-lycabinet.remove;
-lycabinet.save;
-lycabinet.lazySave;
-lycabinet.lazySet;
-lycabinet._init;
-lycabinet.load;
-lycabinet.isVacant;
-// (configurable)
-lycabinet.database;
-lycabinet.clear;
-lycabinet.foreach;
-```
+但由于去掉了发布订阅系统，以此为基础的拓展模块都将无法工作.
 
-但由于去掉了发布订阅系统，以此为基础的插件都将无法工作
+虽然默认light版没有导入任何拓展模块，但其他拓展方法的插件仍然可以正常工作。
 
-而其他拓展方法的插件仍然可以正常工作。
+因此如果你确实需要 observer 和 filter 模块，在 src/light.js 中将相应位置注释取消，重新编译即可。
 
 
 ## Plugins

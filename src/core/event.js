@@ -36,7 +36,14 @@ export function InitEventSystem(Lycabinet){
 
   // for Debug
   DEBUG && (Lycabinet.prototype._setlog = function(){
-    const presets = ['created','mounted', 'lazySave', 'getItem', 'removeItem', 'saved', 'beforeSave', 'beforeLoad', 'loaded', 'beforeClear', 'cleared', 'setItem'];
+    const presets = [
+      'created','mounted', 
+      'getItem', 'removeItem', 'setItem', 
+      'lazySave', 
+      'saved', 'beforeSave', 
+      'beforeLoad', 'loaded', 
+      'beforeClear', 'cleared',
+    ];
 
     new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{
       let testHandle = subscriptions[item] && subscriptions[item].logHandle;
@@ -45,7 +52,7 @@ export function InitEventSystem(Lycabinet){
       }
       // give a handle
       const logHandle = ()=>{
-        console.log(`Triggered the event: '${item}'`);
+        console.log(`[Lycabinet]: Triggered the event: '${item}'`);
       };
       this._on(item, logHandle);
       // add handle

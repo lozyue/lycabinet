@@ -163,9 +163,11 @@ lactionIns.use(Lycabinet); // And the time the lazy method period in lycabinet i
 
 默认情况下对于实例化的 lycabinet 对象是保护起来的。
 
-你应该通过 `set`, `get`, `delete`, `foreach`(configurable),`clear`(configurable)
+你应该通过 `set`, `get`, `delete`, `foreach`, `map`, `clear` 等方法
 
 来读写访问其中的数据。
+
+#### Directly Modify 直改模式
 
 但有时你会觉得总是使用 
 ```js

@@ -33,6 +33,7 @@ export function addFilter(Lycabinet){
             let currentStorage = _this.__storage;
             current.forEach((item, i )=>{
               currentStorage = currentStorage[current[i]];
+              // Compliment the non-final selection. 
               if( i +1 < current.length && is_Defined( currentStorage )){
                 if(!is_Defined(filtered[current[ i ]]) )
                   filtered[current[i]] = {};

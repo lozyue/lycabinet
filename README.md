@@ -95,7 +95,7 @@ settings.save();
 | option      | 描述                                                                 | type    | default |
 | ----------- | -------------------------------------------------------------------- | ------- | ------- |
 | initStorage | 初始化的数据对象引用(之后的`load,set,save,clear`等方法均其上进行)      | Object  | {}      |
-| autoload    | 初始化时是否自动调用加载方法                                         | Boolean | true    |
+| autoload    | 初始化时是否自动调用加载方法, 如果设为 false 禁用后, 需要手动调用实例的__init和load方法 | Boolean | true    |
 | saveMutex   | 是否启用保存动作状态互斥                                                     | Boolean | true    |
 | lazyPeriod | 懒保存节流周期。单位: ms,影响`lazySave`和`lazySet`方法的节流。挂载`LactionJS`替换为Laction instance的周期 | Integer | 5000 |
 | concurrence | 是否允许本地和外部存储并行，设置为false时且未设定外部存储将不会进行本地存储    | Boolean | true    |

@@ -13,6 +13,7 @@ export function InitEventSystem(Lycabinet){
     const actions = subscriptions[name] || (subscriptions[name] = []);
     actions.push(func);
   }
+  
   Lycabinet.prototype._off = function(name, handle){
     const actions = subscriptions[name] || (subscriptions[name] = []);
     removeItem(actions, handle);

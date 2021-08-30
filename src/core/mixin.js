@@ -9,9 +9,10 @@ export function InitMixin(Lycabinet){
     return this;
   };
 
-  Lycabinet.prototype.__install = function(options){
+  Lycabinet.prototype.__install = function(...options){
+    options.unshift(this);
     Lycabinet.prototype._mixins.forEach(func => {
-      func.call(this, options);
+      func.apply(func, options);
     });
   };
 }

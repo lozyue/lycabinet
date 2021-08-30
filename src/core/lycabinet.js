@@ -31,13 +31,15 @@ export function InitCore(Lycabinet){
       throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
     }
 
-    this.__root = (root || 'lycabinet')+''; // The key in storage. Must be a string.
+    this.__root = (root || 'lycabinet') + ''; // The key in storage. Must be a string.
 
     // default options.
     const defaultOptions = {
-      autoload: true, // 实例化后 自动 __init and 调用 load 方法
+      root: this.__root, // copy to options.
+      autoload: true, // 实例化后 自动调用 __init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
       lazyPeriod : ~~options.lazyPeriod || 5000, // set the lazy period of lazySave methods.
       saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作.
+      autoLazy: true, // Call lazy save automaticly when the save is busy. 
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
@@ -48,7 +50,7 @@ export function InitCore(Lycabinet){
       
       // Decide weather enable local cabinet when cloud is setted. Auto judge.
       concurrence: !(options.outerLoad && options.outerSave && options.outerClear),
-      // cloud loads example options.
+      // cloud loads example options. The inner pointer `this` is pointed to `cabinet.options` if not set by arrow function.
       outerLoad: ([root, cabinet], success, error)=>{
         // data = load(root)
         let data = {};
@@ -95,7 +97,7 @@ export function InitCore(Lycabinet){
     this.status = _STATUS.MOUNTED;
     this._trigger("mounted");
     // Auto load.
-    if(this.options.autoload) this.load();
+    if(this.options.autoload) this.load(false); // default using shallow assign.
     else this.status = _STATUS.IDLE; // Amend the status error.
   }
 
@@ -171,7 +173,7 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "clear", "cloudClearings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Load cabinet failed: ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}". ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -187,10 +189,11 @@ export function InitCore(Lycabinet){
   /**
    * Load the cabinet on initialization.
    * The local load is faster than cloud.
-   * @param {*} onCloud 
-   * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
+   * @param { Boolean } onCloud 
+   * @param { Boolean } concurrent Override the default options in `this.options.concurrence`
+   * @param { Boolean } deepMerge Using deepAssign instead of Object.assign to merge the data from local and cloud.
    */
-  Lycabinet.prototype.load = function(onCloud = null, concurrent = null){
+  Lycabinet.prototype.load = function(deepMerge = false, onCloud = null, concurrent = null){
     // merge default options.
     concurrent = is_Defined(concurrent)? concurrent: this.options.concurrence;
     onCloud = is_Defined(onCloud)? onCloud: !!this.options.outerLoad;
@@ -206,7 +209,10 @@ export function InitCore(Lycabinet){
       }
       const localApi = this.options.localInterface;
       localTemp = JSON.parse( localApi.getItem.call(localApi.database, this.__root) );
-      Object.assign(this.__storage, localTemp);
+      if(deepMerge)
+        deepAssign(this.__storage, localTemp)
+      else
+        Object.assign(this.__storage, localTemp);
     };
 
     // Cloud load
@@ -214,15 +220,19 @@ export function InitCore(Lycabinet){
     const onSuccess = (data)=>{
       if(!is_Defined(data) || !is_PlainObject(data))
         throw new Error(`[Lycabinet]: Load cabinet with empty 'data' which type is ${typeof data}`);
+        
+      if(deepMerge)
+        deepAssign(this.__storage, data);
+      else 
       // shallow assign makes cloud weight heavier.
-      Object.assign(this.__storage, data);
+        Object.assign(this.__storage, data);
       this.status = _STATUS.IDLE;
       this._trigger('loaded');
     }
     const onError = (msg)=>{
       this._trigger("error", "load", "cloudLoadings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Load cabinet failed: ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}". ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -246,8 +256,9 @@ export function InitCore(Lycabinet){
     this._trigger("beforeSave", check);
     if( check ){
       DEBUG && console.log(`The 'save' manipulation is deserted for busy. Set 'saveMutex' false to disable it.`);
-      this.lazySave(onCloud, concurrent);
-      return null;
+      this._trigger("busy");
+      this.options.autoLazy && this.lazySave(onCloud, concurrent);
+      return this;
     }
     
     // merge default options.
@@ -259,7 +270,7 @@ export function InitCore(Lycabinet){
     let localSave = ()=>{
       if(onCloud && !concurrent ){
         DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrence=false.");
-        return;
+        return this;
       }
       const localApi = this.options.localInterface;
       localApi.setItem.call(localApi.database, this.__root, JSON.stringify(this.__storage ) );
@@ -275,7 +286,7 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "save", "cloudSavings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Save cabinet failed: ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}". ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -306,7 +317,7 @@ export function InitCore(Lycabinet){
    * Iterate the first hierarchy with callback.
    * @param {Function: (item, index)=>any }} callback  with two params
    */
-  Lycabinetl.prototype.map = function(callback){
+  Lycabinet.prototype.map = function(callback){
     let item, index = 0;
     for(let key in this.__storage){
       item = this.__storage[key];

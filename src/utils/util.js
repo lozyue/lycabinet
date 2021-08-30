@@ -9,15 +9,20 @@
  * @param target
  * @param source
  */
-export function deepAssign(target, source){
-  for(let item in source){
-    if(!(target[item] && is_PlainObject(target[item])) ){
-      target[item] = source[item];
-    }else{
-      deepAssign(target[item], source[item]);
+export function deepAssign(...objs){
+  let merged; 
+  objs.reduce((target, source)=>{
+    for(let item in source){
+      if(!(target[item] && is_PlainObject(target[item])) ){
+        target[item] = source[item];
+      }else{
+        deepAssign(target[item], source[item]);
+      }
     }
-	}
-	return target;
+    merged = target;
+    return target;
+  }, Object.create(null)); // The third param is to set default value.
+  return merged;
 }
 
 /**
@@ -33,7 +38,7 @@ export function objectSupplement(target, supplement){
     current = target[item];
     if( is_Defined(current) )
       continue;
-    current = supplement[item];
+    target[item] = supplement[item];
   }
   return target;
 }
@@ -51,10 +56,11 @@ export function deepSupplement(target, supplement){
     current = target[item];
     if(is_Defined(current)){
       if(!is_PlainObject(current)) continue;
-      deepSupplement(current, supplement[item]);
+      deepSupplement(current, supplement[item]); // The `current` is a reference which could be assigned.
     }
     else 
-      current = supplement[item];
+      // current = supplement[item];
+      target[item] = supplement[item];
   }
   return target;
 }

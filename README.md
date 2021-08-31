@@ -138,7 +138,7 @@ new Lycabinet("rootName", {
 
 
 
-### Advance
+## Advance
 
 与 Laction JS 共同使用
 
@@ -188,6 +188,19 @@ lycabinet_instance.save();
 你甚至可以配合小型响应式系统插件 `observe` plugin 来对其get和set操作来应用自动行为,
 
 其将对数据对象进行劫持，在对数据对象进行修改后会自动调用保存方法。
+
+
+### 事件 (Event)
+
+普通事件:
+
+特殊事件: (具有特定功能，带有时间执行参数、需要处理的返回值等)
+```js
+"localLoaded", "localCleared", "localSaved"
+```
+主要用于插件开发，充当函数钩子. 
+
+主要应用：本地保存的数据原子性保持。
 
 
 #### lycabinet.light.js

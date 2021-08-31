@@ -43,9 +43,9 @@ export function InitCore(Lycabinet){
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
-        getItem: window.localStorage.getItem,
-        setItem: window.localStorage.setItem,
-        removeItem: window.localStorage.removeItem,
+        getItem: "getItem", // method name, String
+        setItem: "setItem", // method name, String
+        removeItem: "removeItem", // method name, String
       }, 
       
       // Decide weather enable local cabinet when cloud is setted. Auto judge.
@@ -156,19 +156,23 @@ export function InitCore(Lycabinet){
     
     // Local clear
     let localClear = ()=>{
-      if(onCloud && !concurrent ){
+      const IgnoreLocal = onCloud && !concurrent;
+      this._trigger('beforeLocalClear', IgnoreLocal); // give an status token before invoke.
+
+      if(IgnoreLocal){
         DEBUG && console.log("[Lycabinet]: The local clear action is ignored by options: concurrence=false.");
-        return;
+        return this;
       }
       const localApi = this.options.localInterface;
-      localApi.removeItem.call(localApi.database, this.__root);
+      localApi.database[localApi.removeItem]( this.__root );
+      // trigger hook event after call local database to clear the Item.
+      this._trigger('localCleared', this.__root); // Give the param of the remove target. 
     }
 
     // Cloud clear
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
       this.status = _STATUS.IDLE;
-      this._trigger('cleared');
     }
     const onError = (msg)=>{
       this._trigger("error", "clear", "cloudClearings");
@@ -180,6 +184,7 @@ export function InitCore(Lycabinet){
     try{
       localClear();
       onCloud && this.options.outerClear(pack, onSuccess, onError);
+      this._trigger('cleared', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "clear", "unknown");
@@ -204,19 +209,22 @@ export function InitCore(Lycabinet){
     // Local load 
     let localLoad = ()=>{
       let localTemp = null;
-      if(onCloud && !concurrent ){
+      const IgnoreLocal = onCloud && !concurrent;
+      this._trigger('beforeLocalLoad', IgnoreLocal); // give an status token before invoke.
+
+      if(IgnoreLocal){
         DEBUG && console.log("[Lycabinet]: The local load action is ignored by options: concurrence=false.");
-        return;
+        return this;
       }
       const localApi = this.options.localInterface;
       
-      // trigger hook event beforeLocalSave. Should have a return value in event. (data)=>{ return handle(data); }
-      let initialData = localApi.getItem.call(localApi.database, this.__root);
-      initialData = this._trigger('beforeLocalLoad', initialData); // Only take effect on the last element.
+      let initialData = localApi.database[localApi.getItem]( this.__root );
+      // trigger hook event after call local database to parse the value. Should have a return value in event. (data)=>{ return handle(data); }
+      initialData = this._trigger('localLoaded', initialData); // Only take effect on the last element.
 
       localTemp = JSON.parse( initialData );
       if(deepMerge)
-        deepAssign(this.__storage, localTemp)
+        deepAssign(this.__storage, localTemp);
       else
         Object.assign(this.__storage, localTemp);
     };
@@ -233,7 +241,6 @@ export function InitCore(Lycabinet){
       // shallow assign makes cloud weight heavier.
         Object.assign(this.__storage, data);
       this.status = _STATUS.IDLE;
-      this._trigger('loaded');
     }
     const onError = (msg)=>{
       this._trigger("error", "load", "cloudLoadings");
@@ -245,6 +252,7 @@ export function InitCore(Lycabinet){
     try{
       localLoad();
       onCloud && this.options.outerLoad(pack, onSuccess, onError);
+      this._trigger('loaded', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "load", "unknown");
@@ -275,16 +283,20 @@ export function InitCore(Lycabinet){
 
     // Local save 
     let localSave = ()=>{
-      if(onCloud && !concurrent ){
+      const IgnoreLocal = onCloud && !concurrent;
+      this._trigger('beforeLocalSave', IgnoreLocal); // give an status token before invoke.
+
+      if(IgnoreLocal){
         DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrence=false.");
         return this;
       }
       const localApi = this.options.localInterface;
       // trigger hook event beforeLocalSave. Should have a return value in event. (data)=>{ return handle(data); }
       let finalData = JSON.stringify(this.__storage );
-      finalData = this._trigger('beforeLocalSave', finalData); // Only take effect on the last element
+      // trigger hook event after call local database to save the value. Should return a String value in event.
+      finalData = this._trigger('localSaved', finalData); // Only take effect on the last element.
 
-      localApi.setItem.call(localApi.database, this.__root, finalData);
+      localApi.database[localApi.setItem](this.__root, finalData);
     };
     
 
@@ -292,7 +304,6 @@ export function InitCore(Lycabinet){
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
       this.status = _STATUS.IDLE;
-      this._trigger('saved');
     }
     const onError = (msg)=>{
       this._trigger("error", "save", "cloudSavings");
@@ -304,6 +315,7 @@ export function InitCore(Lycabinet){
     try{
       localSave();
       onCloud && this.options.outerSave(pack, onSuccess, onError);
+      this._trigger('saved', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "save", "unknown");

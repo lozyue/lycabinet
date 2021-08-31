@@ -6,7 +6,7 @@
  */
 
 import * as _STATUS from '../utils/status.js';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG } from '../utils/util.js';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, arrayIndex } from '../utils/util.js';
 
 /**
  * Init core.
@@ -173,7 +173,7 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "clear", "cloudClearings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}". ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -182,6 +182,7 @@ export function InitCore(Lycabinet){
       onCloud && this.options.outerClear(pack, onSuccess, onError);
     } catch(e){
       console.error(e);
+      this._trigger("error", "clear", "unknown");
     }
     return this;
   }
@@ -208,7 +209,12 @@ export function InitCore(Lycabinet){
         return;
       }
       const localApi = this.options.localInterface;
-      localTemp = JSON.parse( localApi.getItem.call(localApi.database, this.__root) );
+      
+      // trigger hook event beforeLocalSave. Should have a return value in event. (data)=>{ return handle(data); }
+      let initialData = localApi.getItem.call(localApi.database, this.__root);
+      initialData = this._trigger('beforeLocalLoad', initialData); // Only take effect on the last element.
+
+      localTemp = JSON.parse( initialData );
       if(deepMerge)
         deepAssign(this.__storage, localTemp)
       else
@@ -232,7 +238,7 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "load", "cloudLoadings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}". ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -241,6 +247,7 @@ export function InitCore(Lycabinet){
       onCloud && this.options.outerLoad(pack, onSuccess, onError);
     } catch(e){
       console.error(e);
+      this._trigger("error", "load", "unknown");
     }
     return this;
   }
@@ -255,15 +262,15 @@ export function InitCore(Lycabinet){
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
     if( check ){
-      DEBUG && console.log(`The 'save' manipulation is deserted for busy. Set 'saveMutex' false to disable it.`);
+      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Set 'saveMutex' false to disable it.`);
       this._trigger("busy");
       this.options.autoLazy && this.lazySave(onCloud, concurrent);
       return this;
     }
     
     // merge default options.
-    concurrent = is_Defined(concurrent)? concurrent: this.options.concurrence;
     onCloud = is_Defined(onCloud)? onCloud: !!this.options.outerSave;
+    concurrent = is_Defined(concurrent)? concurrent: this.options.concurrence;
     this.status = _STATUS.SAVING;
 
     // Local save 
@@ -273,7 +280,11 @@ export function InitCore(Lycabinet){
         return this;
       }
       const localApi = this.options.localInterface;
-      localApi.setItem.call(localApi.database, this.__root, JSON.stringify(this.__storage ) );
+      // trigger hook event beforeLocalSave. Should have a return value in event. (data)=>{ return handle(data); }
+      let finalData = JSON.stringify(this.__storage );
+      finalData = this._trigger('beforeLocalSave', finalData); // Only take effect on the last element
+
+      localApi.setItem.call(localApi.database, this.__root, finalData);
     };
     
 
@@ -286,7 +297,7 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "save", "cloudSavings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}". ${msg}`);
+      throw new Error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -295,6 +306,7 @@ export function InitCore(Lycabinet){
       onCloud && this.options.outerSave(pack, onSuccess, onError);
     } catch(e){
       console.error(e);
+      this._trigger("error", "save", "unknown");
     }
     return this;
   }
@@ -323,37 +335,5 @@ export function InitCore(Lycabinet){
       item = this.__storage[key];
       this.__storage[key] = callback(item, index++); // only two params.
     }
-  }
-
-  
-  /**
-   * Lazy methods support.
-   * The params is the same to save methods.
-   */
-  Lycabinet.prototype.lazySave = function(){
-    var lastTime = 0;
-    return function(...params){
-      var nowTime = new Date().getTime();
-      // The gap is not so accurate but enough.
-      let judge = nowTime - lastTime > this.options.lazyPeriod;
-      this._trigger("lazySave", judge);
-      if (judge) {
-        // Use default settings
-        this.save(...params);
-        lastTime = nowTime;
-      }
-      return this;
-    }
-  }();
-
-  /**
-   * Just calling lazySave after save called.
-   * @param {*} key 
-   * @param {*} value 
-   * @param {...any} params parameters to lazySave. 
-   */
-  Lycabinet.prototype.lazySet = function(key, value, ...params){
-    this.set(key, value).lazySave(...params);
-    return this;
   }
 }

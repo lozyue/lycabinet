@@ -1,5 +1,6 @@
 /**
  * Add a filter before save the storage.
+ * You should give a value to the options : includes & excludes.
  * (Via to JSON hook)
  * @param {*} Lycabinet 
  */
@@ -9,21 +10,28 @@ export function addFilter(Lycabinet){
   /**
    * Set a filter by options
    * Support dot `.` selection expression
-   * @param {Object} options {includes: [], excludes:[] }
+   * @param {Object} cabinetIns {includes: [], excludes:[] }
    */
-  Lycabinet.mixin(function(options){
-    options = deepSupplement(options, {
-      includes: [], // vacant equal to all!
-      excludes: [],
-    });
+  Lycabinet.mixin(function(cabinetIns){
+    const opt = cabinetIns.options;
+    if(opt.includes && opt.excludes)
+      this.setFilter(); // auto set.
+    else{
+      deepSupplement(opt, {
+        includes: [], // vacant equal to all!
+        excludes: [],
+      });
+    }
   });
 
-  Lycabinet.prototype.CustomToJSON = function (){
+  Lycabinet.prototype.setFilter = function (){
     const _this = this;
     Object.defineProperty(this.getStore(), 'toJSON', {
       configurable: true,
       enumerable: false, // hide in enumeration.
       value: function(){
+        console.log(_this);
+
         let filtered = Object.create(null);
         // set the basement includes.
         if(_this.options.includes.length>0){
@@ -47,7 +55,7 @@ export function addFilter(Lycabinet){
         }else Object.assign(filtered, _this.__storage);
         // caculating the exclude filtering.
         let excludesKeyMap = [];
-        _this.options.excludes.forEach( (associatedKey, index)=>{
+        _this.options.excludes.forEach( (associatedKey, index, arr)=>{
           let current = excludesKeyMap[index] = associatedKey.split(".");
           let currentStorage = filtered;
           // instead of forEach to control logical better.

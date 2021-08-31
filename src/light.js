@@ -7,6 +7,7 @@
 
 import { InitStore } from './core/store';
 import { InitCore } from './core/lycabinet';
+import { InitLazyDepartment } from './core/lazy-support';
 import { InitMixin } from "./core/mixin";
 
 
@@ -37,6 +38,7 @@ function Lycabinet(...options){
 InitStore(Lycabinet);
 InitEventSystem(Lycabinet);
 InitCore(Lycabinet);
+InitLazyDepartment(Lycabinet);
 InitMixin(Lycabinet);
 
 initImbedding(Lycabinet);

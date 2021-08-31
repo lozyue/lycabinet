@@ -3,13 +3,25 @@
  * By lozyue.
  */
 
+/**
+ * 
+ * @param  {...any} objs 
+ */
+export const arrayIndex = function(arr, index){
+  index = (arr.length + index) %arr.length;
+  if(arr[index] === undefined){
+    console.log(arr, index);
+    throw new Error(`The index ${index} in array ${arr.toString()} is overflowed!`);
+  }
+  return arr[index];
+}
 
 /**
  * Deep Object.assign source to target.
  * @param target
  * @param source
  */
-export function deepAssign(...objs){
+export const deepAssign = function(...objs){
   let merged; 
   objs.reduce((target, source)=>{
     for(let item in source){

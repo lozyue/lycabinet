@@ -1,7 +1,8 @@
 /**
  * Event system provided.
+ * Have weak hook fundamental at same time.
  */
-import { removeItem, is_Function, DEBUG } from '../utils/util';
+import { removeItem, is_Function, DEBUG, arrayIndex } from '../utils/util';
 
 export function InitEventSystem(Lycabinet){
   const subscriptions = Object.create(null);
@@ -21,9 +22,18 @@ export function InitEventSystem(Lycabinet){
 
   Lycabinet.prototype._trigger = function(name, ...params){
     const actions = subscriptions[name] || (subscriptions[name] = []);
-    actions.forEach(func=>{
-      func.apply(this, params);
-    });
+    // const results = actions.map(func=>{
+    //   return func.apply(this, params);
+    // });
+    const results = [];
+    params.push(results);
+    for(let index=0; index< actions.length; index++){
+      let temp = actions[index].apply(this, params);
+      temp && results.push( temp );
+    }
+    // if no hook this will returns last params. We can use last params to set default value.
+    return results.length? arrayIndex(results, -1): params.length? arrayIndex(params, -1): null;
+    // return this._finalHandle(results);
   }
 
   Lycabinet.prototype._once = function(name, func){
@@ -35,19 +45,27 @@ export function InitEventSystem(Lycabinet){
     this._on(name, handleFunc);
   }
 
+  // Lycabinet.prototype._final = function(name, func){
+  //   const actions = subscriptions[name] || (subscriptions[name] = []);
+  //   actions._final = (data)=>(data[data.length - 1]);
+  // }
+  // Lycabinet.prototype._handleFinal = function(res){
+  //   actions._final(res);
+  // }
+
   // for Debug
   DEBUG && (Lycabinet.prototype._setlog = function(){
     const presets = [
       'created','mounted', 
       'getItem', 'removeItem', 'setItem', 
       'lazySave', 
-      'saved', 'beforeSave', 
+      'saved', 'beforeSave', 'busy',
       'beforeLoad', 'loaded', 
       'beforeClear', 'cleared',
     ];
 
     new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{
-      let testHandle = subscriptions[item] && subscriptions[item].logHandle;
+      let testHandle = subscriptions[item] && subscriptions[item]._logHandle;
       if(testHandle){
         this._off(item, testHandle)
       }
@@ -57,7 +75,7 @@ export function InitEventSystem(Lycabinet){
       };
       this._on(item, logHandle);
       // add handle
-      testHandle = logHandle;
+      subscriptions[item]._logHandle = logHandle;
     });
   });
 }

@@ -14,13 +14,16 @@ export function addObserver(Lycabinet){
 
     // init proxy Interceptor.
     const _this = this;
-    optionalSave = ()=>{options.lazy? _this.lazySave(): _this.save()};
-    this.__storage = setProxy(this.__storage, optionalSave);
+    onSetted = ()=>{
+      _this._trigger("setItem");
+      options.lazy? _this.lazySave(): _this.save();
+    };
+    this.__storage = setProxy(this.__storage, onSetted);
     let current = null;
     for(let item in this.__storage){
       current = this.__storage[item];
       if(is_PlainObject(current)){
-        current = setProxy(current, optionalSave)
+        current = setProxy(current, onSetted);
       }
     };
   };

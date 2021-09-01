@@ -9,6 +9,9 @@ import { addStoreListener, arrayIndex, DEBUG, objectSupplement } from "../utils/
 const ParticalToken = 'cabinetSyncTabs';
 
 export function addCheck(Lycabinet){
+  /**
+   * JSON analysis argumented.
+   */
   Lycabinet.mixin(function(cabinetIns){
     cabinetIns._on("localLoaded", function(finalData, results){
       let final = results.length? arrayIndex(results, -1): finalData;
@@ -20,6 +23,19 @@ export function addCheck(Lycabinet){
       let final = results.length? arrayIndex(results, -1): finalData;
       return final;
     });
+  });
+
+  /**
+   * Add a dirty flag for judging.
+   */
+  Lycabinet.mixin(function(cabinetIns){
+    // This is not so precious. Because user can manually set the __storage Object whose action is not recorded.
+    cabinetIns._on("setItem", function(){
+      this._dirty = true;
+    });
+    cabinetIns._on("saved", function(){
+      this._dirty = false;
+    })
   });
 
   /**

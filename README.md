@@ -202,6 +202,20 @@ lycabinet_instance.save();
 
 主要应用：本地保存的数据原子性保持。
 
+### Wired phenomenon.
+
+为什么 调用了 _setlog 方法却还是没有在控制台看到created, mouted, beforeLoad, loaded（仅使用本地存储时）,等事件？
+
+一个可能的原因是 你使用了默认的自动加载的配置，那么当你调用 _setlog 方法时这些事件就已经发生了.
+
+如果你确实需要看到这些事件，你只需在初始化时传递选项 autoload为 false, 然后调用实例 _setlog 方法，
+
+再手动调用 __init 进行初始化，这样就可以看到 created 之后的事件.
+
+如果需要连同 created 事件一起打印，清晰的看到整个生命周期的话，
+
+在初始化时 传递 logEvent: true 即可.
+
 
 #### lycabinet.light.js
 

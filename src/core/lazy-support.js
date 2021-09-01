@@ -8,21 +8,22 @@ export function InitLazyDepartment(Lycabinet){
    * Add lazySave support.
    * The params is the same to save methods.
    */
-  Lycabinet.prototype.lazySave = function(){
+  Lycabinet.prototype.lazySave = (function(){
     var lastTime = 0;
     return function(...params){
       var nowTime = new Date().getTime();
       // The gap is not so accurate but enough.
-      let judge = nowTime - lastTime > this.options.lazyPeriod;
+      let judge = nowTime - lastTime > 5000; //this.options.lazyPeriod;
       this._trigger("lazySave", judge);
       if (judge) {
+        lastTime = nowTime; // first!
         // Use default settings
+        console.log("Lazy executed!", nowTime, lastTime, judge)
         this.save(...params);
-        lastTime = nowTime;
       }
       return this;
     }
-  }();
+  })();
 
   /**
    * Just calling lazySave after save called.

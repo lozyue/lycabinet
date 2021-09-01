@@ -26,15 +26,15 @@ export function addCheck(Lycabinet){
    * Listening the storage event from other tabs(pages)
    * by
    */
-  var context = {};
+  var localContext = {};
   addStoreListener( (eve)=>{
-    if(!context.cabinetIns){
-      console.log("cabinetIns is not mouted!");
+    if(!localContext.cabinetIns){
+      console.warn("cabinetIns is not mouted!");
       return true;
     }
 
-    const { cabinetIns: cabinetIns } = context;
-
+    const { cabinetIns: cabinetIns } = localContext;
+    
     // Reload. By default using deeepMerge mode.
     if([cabinetIns.__root, ParticalToken].indexOf(eve.key) > -1){
       DEBUG && console.log("[Lycabinet]: Synchronizing data from other tabs...");
@@ -47,8 +47,8 @@ export function addCheck(Lycabinet){
    * Add auto tab synchronize listener options.
    */
   Lycabinet.mixin(function(cabinetIns){
-    // save the context
-    context.cabinetIns = cabinetIns;
+    // save the localContext
+    localContext.cabinetIns = cabinetIns;
 
     // add options for custom database which is not localStorage.
     objectSupplement(cabinetIns.options, {

@@ -22,20 +22,20 @@ export const arrayIndex = function (arr, index) {
  * @param { Function } invoke Target invoke function or handle. 
  * @param { Boolean } remove wheather the action is to remove added storage listener.
  */
-export const addStoreListener = ()=>{
+export const addStoreListener = (()=>{
   const invokeQueue = [];
   window.addEventListener("storage", (eve)=>{
     invokeQueue.forEach(func=>{
       func(eve);
     });
-  }, false);
+  }, false); // default bubble.
 
   return (invoke, remove = false)=>{
     if(remove) 
       removeItem(invokeQueue, invoke);
     else invokeQueue.push(invoke);
   }
-}
+})();
 
 /**
  * Deep Object.assign source to target.
@@ -46,7 +46,7 @@ export const deepAssign = function (...objs) {
   let merged;
   objs.reduce((target, source) => {
     for (let item in source) {
-      if (!(target[item] && is_PlainObject(target[item]))) {
+      if (!(target[item] && is_PlainObject(target[item])) ) {
         target[item] = source[item];
       } else {
         deepAssign(target[item], source[item]);
@@ -54,7 +54,7 @@ export const deepAssign = function (...objs) {
     }
     merged = target;
     return target;
-  }, Object.create(null)); // The third param is to set default value.
+  }, objs[0]); // The third param is to set default value.
   return merged;
 }
 
@@ -123,6 +123,16 @@ export const is_PlainObject = (obj) => (Object.prototype.toString.call(obj) === 
 export const is_Array = (obj) => (Array.isArray && Array.isArray(obj) || (typeof obj === 'object') && obj.constructor == Array);
 export const is_String = (str) => ((typeof str === 'string') && str.constructor == String);
 export const is_Function = (obj) => ((typeof obj === 'function') && obj.constructor == Function);
+
+export const is_Empty = (val)=>{
+  if(!val) return true;
+  if(is_Array(val)){
+    return !val.length;
+  }else{
+    return !Object.keys(val).length;
+  }
+}
+
 /*
  * Delete the Item in an Array, returning the new Array.
  */

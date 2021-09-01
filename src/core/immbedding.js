@@ -40,7 +40,7 @@ export function initImbedding(Lycabinet){
 
     /**
      * lazySave method update
-     * Rewrite lazy methods with laction instances. And give it better performance and even visualizaztion.
+     * OverWrite lazy methods with laction instances. And give it better performance and even visualizaztion.
      * @param {*} lazyOrbitId the added params for laction. 
      */
     Lycabinet.prototype.lazySave = function(...params){

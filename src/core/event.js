@@ -34,16 +34,16 @@ export function InitEventSystem(Lycabinet){
     // if no hook this will returns last params. We can use last params to set default value.
     return results.length? arrayIndex(results, -1): params.length? arrayIndex(params, -1): null;
     // return this._finalHandle(results);
-  }
+  };
 
   Lycabinet.prototype._once = function(name, func){
     const _this = this;
     var handleFunc = function(...params){
-      func.apply(this, params);
+      func.apply(_this, params);
       _this._off(name, handleFunc);
     }; 
     this._on(name, handleFunc);
-  }
+  };
 
   // Lycabinet.prototype._final = function(name, func){
   //   const actions = subscriptions[name] || (subscriptions[name] = []);
@@ -54,14 +54,17 @@ export function InitEventSystem(Lycabinet){
   // }
 
   // for Debug
-  DEBUG && (Lycabinet.prototype._setlog = function(){
+  // DEBUG && (Lycabinet.prototype._setlog = function(){
+  (Lycabinet.prototype._setlog = function(){
     const presets = [
       'created','mounted', 
-      'getItem', 'removeItem', 'setItem', 
+      'getItem', 'removeItem', 
+      'setItem', 'writeLock', 'writeBackflow', 
       'lazySave', 
-      'saved', 'beforeSave', 'busy',
-      'beforeLoad', 'loaded', 
-      'beforeClear', 'cleared',
+      'beforeSave', 'beforeLocalSave', 'localSaved', 'saved', 'busy',
+      'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
+      'beforeClear', 'beforeLocalClear', 'localCleared', 'cleared',
+      'error',
     ];
 
     new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{

@@ -6,7 +6,7 @@
  */
 
 import * as _STATUS from '../utils/status.js';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, arrayIndex } from '../utils/util.js';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex } from '../utils/util.js';
 
 /**
  * Init core.
@@ -38,8 +38,9 @@ export function InitCore(Lycabinet){
       root: this.__root, // copy to options.
       autoload: true, // 实例化后 自动调用 __init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
       lazyPeriod : ~~options.lazyPeriod || 5000, // set the lazy period of lazySave methods.
-      saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作.
+      saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作. （暂时未防止loading完成前修改……）
       autoLazy: true, // Call lazy save automaticly when the save is busy. 
+      logEvent: false, // use this to 
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
@@ -67,6 +68,10 @@ export function InitCore(Lycabinet){
     };
     this.options = deepAssign(defaultOptions, options);
     this.__install(this.options);
+    
+    // root event console log
+    if(this.options.logEvent) this._setlog();
+
     this.status = _STATUS.CREATED; // status token
     this._trigger("created");
     // From now can have CURD manipulations.
@@ -87,12 +92,16 @@ export function InitCore(Lycabinet){
       this.setStore(this.__storage);
     }
 
-    // bind correct Object to the local methods. Replaced by call!
-    // const localApi = this.options.localInterface;
-    // for(let api in localApi){
-    //   if(api!=='database')
-    //     localApi[api].bind(localApi.database);
-    // }
+    // write protection backflow
+    const writeBackflow = function(){
+      if(is_Empty(this.__tempStorage)) return;
+      // backflow
+      deepAssign(this.__storage, this.__tempStorage);
+      this.__tempStorage = Object.create(null);
+      this._trigger("writeBackflow");
+    }
+    this._on("loaded", writeBackflow);
+    this._on("cleared", writeBackflow);
 
     this.status = _STATUS.MOUNTED;
     this._trigger("mounted");
@@ -110,10 +119,20 @@ export function InitCore(Lycabinet){
 
   /**
    * Set an item with key.
+   * Added write protection on stage loading and clearing.
    * @param {*} key 
    * @param {*} value 
    */
   Lycabinet.prototype.set = function(key, value){
+    const MutexStatus = [_STATUS.LOADING, _STATUS.CLEARING];
+    // add write protection.    
+    if(MutexStatus.indexOf(this.status) > -1){
+      this._trigger("writeLock");
+      this.__tempStorage = this.__tempStorage || (this.__tempStorage = Object.create(null));
+      this.__tempStorage[key] = value;
+      return this;
+    }
+
     this.__storage[key] = value;
     this._trigger('setItem', key, value);
     return this;
@@ -121,6 +140,7 @@ export function InitCore(Lycabinet){
 
   /**
    * Get the value of an item by key.
+   * Please don't read from loading and clearing stream.
    * @param {*} key 
    */
   Lycabinet.prototype.get = function(key){
@@ -173,6 +193,7 @@ export function InitCore(Lycabinet){
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
       this.status = _STATUS.IDLE;
+      this._trigger('cleared', onCloud, concurrent);
     }
     const onError = (msg)=>{
       this._trigger("error", "clear", "cloudClearings");
@@ -183,8 +204,10 @@ export function InitCore(Lycabinet){
     // handle this async or asyn easily.
     try{
       localClear();
-      onCloud && this.options.outerClear(pack, onSuccess, onError);
-      this._trigger('cleared', onCloud, concurrent);
+      if(onCloud) 
+        this.options.outerClear(pack, onSuccess, onError);
+      else 
+        this._trigger('cleared', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "clear", "unknown");
@@ -241,6 +264,7 @@ export function InitCore(Lycabinet){
       // shallow assign makes cloud weight heavier.
         Object.assign(this.__storage, data);
       this.status = _STATUS.IDLE;
+      this._trigger('loaded', onCloud, concurrent);
     }
     const onError = (msg)=>{
       this._trigger("error", "load", "cloudLoadings");
@@ -251,8 +275,10 @@ export function InitCore(Lycabinet){
     // handle this async or asyn easily.
     try{
       localLoad();
-      onCloud && this.options.outerLoad(pack, onSuccess, onError);
-      this._trigger('loaded', onCloud, concurrent);
+      if(onCloud) 
+        this.options.outerLoad(pack, onSuccess, onError);
+      else 
+        this._trigger('loaded', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "load", "unknown");
@@ -304,6 +330,7 @@ export function InitCore(Lycabinet){
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
       this.status = _STATUS.IDLE;
+      this._trigger('saved', onCloud, concurrent);
     }
     const onError = (msg)=>{
       this._trigger("error", "save", "cloudSavings");
@@ -314,8 +341,10 @@ export function InitCore(Lycabinet){
     // handle this async or asyn easily.
     try{
       localSave();
-      onCloud && this.options.outerSave(pack, onSuccess, onError);
-      this._trigger('saved', onCloud, concurrent);
+      if(onCloud) 
+        this.options.outerSave(pack, onSuccess, onError);
+      else 
+        this._trigger('saved', onCloud, concurrent);
     } catch(e){
       console.error(e);
       this._trigger("error", "save", "unknown");

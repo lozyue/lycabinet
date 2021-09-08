@@ -81,6 +81,7 @@ export function InitCore(Lycabinet){
   /**
    * Initialize the cabinet storage before 'CURD' manipulation.
    * If autoload is not setted, you should call this manually.
+   * Todo: add reduplicate __init check and warning.
    */
   Lycabinet.prototype.__init = function(cabinet = Object.create(null)){
     // override the options by the already existed cabinet.
@@ -153,11 +154,15 @@ export function InitCore(Lycabinet){
    * Delete an item by key.
    */ 
   Lycabinet.prototype.remove = function(keys){
+    let removed = false;
     arbitraryFree(keys, (k)=>{
       // Though it isn't disappeared immediately, But after JSON parse and stringify manipulations this will be cleared.
-      this.set(k, void 0);
+      if(this.__storage.hasOwnProperty(k)){
+        this.set(k, void 0);
+        removed = true
+      }
     }); 
-    this._trigger('removeItem', keys);
+    this._trigger('removeItem', keys, removed);
     return this;
   }
 
@@ -206,8 +211,10 @@ export function InitCore(Lycabinet){
       localClear();
       if(onCloud) 
         this.options.outerClear(pack, onSuccess, onError);
-      else 
+      else {
+        this.status = _STATUS.IDLE;
         this._trigger('cleared', onCloud, concurrent);
+      }
     } catch(e){
       console.error(e);
       this._trigger("error", "clear", "unknown");
@@ -277,8 +284,10 @@ export function InitCore(Lycabinet){
       localLoad();
       if(onCloud) 
         this.options.outerLoad(pack, onSuccess, onError);
-      else 
+      else {
+        this.status = _STATUS.IDLE;
         this._trigger('loaded', onCloud, concurrent);
+      }
     } catch(e){
       console.error(e);
       this._trigger("error", "load", "unknown");
@@ -296,7 +305,7 @@ export function InitCore(Lycabinet){
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
     if( check ){
-      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Set 'saveMutex' false to disable it.`);
+      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Current Status: ${this.status} \nSet 'saveMutex' false to disable it.`);
       this._trigger("busy");
       this.options.autoLazy && this.lazySave(onCloud, concurrent);
       return this;
@@ -343,8 +352,10 @@ export function InitCore(Lycabinet){
       localSave();
       if(onCloud) 
         this.options.outerSave(pack, onSuccess, onError);
-      else 
+      else {
+        this.status = _STATUS.IDLE;
         this._trigger('saved', onCloud, concurrent);
+      }
     } catch(e){
       console.error(e);
       this._trigger("error", "save", "unknown");

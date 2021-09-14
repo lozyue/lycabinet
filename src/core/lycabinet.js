@@ -40,7 +40,9 @@ export function InitCore(Lycabinet){
       lazyPeriod : ~~options.lazyPeriod || 5000, // set the lazy period of lazySave methods.
       saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作. （暂时未防止loading完成前修改……）
       autoLazy: true, // Call lazy save automaticly when the save is busy. 
-      logEvent: false, // use this to 
+      logEvent: false, // use this to log event globally from scratch
+      useSharedCabinet: true, // use global shared cabinet
+      shareCabinet: true, // share the cabinet for global
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
@@ -85,12 +87,14 @@ export function InitCore(Lycabinet){
    */
   Lycabinet.prototype.__init = function(cabinet = Object.create(null)){
     // override the options by the already existed cabinet.
-    if(this.hasStore()){
+    // this is global shared with all the instance in the page.
+    if(this.options.useSharedCabinet && this.hasStore()){
       this.__storage = this.getStore();
     }
     else{
       this.__storage = this.__storage || cabinet;
-      this.setStore(this.__storage);
+      if(this.options.shareCabinet)
+        this.setStore(this.__storage);
     }
 
     // write protection backflow

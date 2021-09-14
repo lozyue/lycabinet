@@ -7,7 +7,7 @@ export function initAlias(Lycabinet){
   
   Lycabinet.prototype.delete = Lycabinet.prototype.remove;
 
-  Lycabinet.prototype.get = Lycabinet.prototype.read;
+  Lycabinet.prototype.read = Lycabinet.prototype.get;
 
-  Lycabinet.prototype.storage = Lycabinet.prototype.getStorage;
+  Lycabinet.prototype.storage = Lycabinet.prototype.getStore;
 }

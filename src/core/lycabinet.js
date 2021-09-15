@@ -207,7 +207,8 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "clear", "cloudClearings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
+      this._trigger('cleared', onCloud, concurrent);
+      console.error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -220,8 +221,7 @@ export function InitCore(Lycabinet){
         this._trigger('cleared', onCloud, concurrent);
       }
     } catch(e){
-      console.error(e);
-      this._trigger("error", "clear", "unknown");
+      onError(e, "unknown");
     }
     return this;
   }
@@ -280,7 +280,8 @@ export function InitCore(Lycabinet){
     const onError = (msg)=>{
       this._trigger("error", "load", "cloudLoadings");
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
+      this._trigger('loaded', onCloud, concurrent);
+      console.error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -293,8 +294,7 @@ export function InitCore(Lycabinet){
         this._trigger('loaded', onCloud, concurrent);
       }
     } catch(e){
-      console.error(e);
-      this._trigger("error", "load", "unknown");
+      onError(e, "unknown");
     }
     return this;
   }
@@ -345,10 +345,11 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('saved', onCloud, concurrent);
     }
-    const onError = (msg)=>{
-      this._trigger("error", "save", "cloudSavings");
+    const onError = (msg, reason="cloudSavings")=>{
+      this._trigger("error", "save", reason);
       this.status = _STATUS.IDLE;
-      throw new Error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
+      this._trigger('saved', onCloud, concurrent);
+      console.error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
     }
 
     // handle this async or asyn easily.
@@ -361,8 +362,7 @@ export function InitCore(Lycabinet){
         this._trigger('saved', onCloud, concurrent);
       }
     } catch(e){
-      console.error(e);
-      this._trigger("error", "save", "unknown");
+      onError(e, 'unknown')
     }
     return this;
   }

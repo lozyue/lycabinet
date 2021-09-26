@@ -86,17 +86,6 @@ export function InitCore(Lycabinet){
    * Todo: add reduplicate __init check and warning.
    */
   Lycabinet.prototype.__init = function(cabinet = Object.create(null)){
-    // override the options by the already existed cabinet.
-    // this is global shared with all the instance in the page.
-    if(this.options.useSharedCabinet && this.hasStore()){
-      this.__storage = this.getStore();
-    }
-    else{
-      this.__storage = this.__storage || cabinet;
-      if(this.options.shareCabinet)
-        this.setStore(this.__storage);
-    }
-
     // write protection backflow
     const writeBackflow = function(){
       if(is_Empty(this.__tempStorage)) return;
@@ -108,11 +97,24 @@ export function InitCore(Lycabinet){
     this._on("loaded", writeBackflow);
     this._on("cleared", writeBackflow);
 
+    // override the options by the already existed cabinet.
+    // this is global shared with all the instance in the page.
+    if(this.options.useSharedCabinet && this.hasStore()){
+      this._trigger("loadingFromCache");
+      this.__storage = this.getStore();
+    }
+    else{
+      this.__storage = this.__storage || cabinet;
+      if(this.options.shareCabinet)
+        this.setStore(this.__storage);
+      // Auto load. Only when the cabinet in using is private.
+      if(this.options.autoload) this.load(false); // default using shallow assign.
+      else this.status = _STATUS.IDLE; // Amend the status error.
+    }
+
     this.status = _STATUS.MOUNTED;
     this._trigger("mounted");
-    // Auto load.
-    if(this.options.autoload) this.load(false); // default using shallow assign.
-    else this.status = _STATUS.IDLE; // Amend the status error.
+    return this;
   }
 
   /**

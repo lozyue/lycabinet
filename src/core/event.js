@@ -58,11 +58,12 @@ export function InitEventSystem(Lycabinet){
   (Lycabinet.prototype._setlog = function(){
     const presets = [
       'created','mounted', 
-      'getItem', 'removeItem', 
+      'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
+      'loadingFromCache',
       'setItem', 'writeLock', 'writeBackflow', 
+      'getItem', 'removeItem', 
       'lazySave', 
       'beforeSave', 'beforeLocalSave', 'localSaved', 'saved', 'busy',
-      'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
       'beforeClear', 'beforeLocalClear', 'localCleared', 'cleared',
       'error',
     ];

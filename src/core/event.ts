@@ -47,7 +47,7 @@ export function InitEventSystem(Lycabinet){
 
   // for Debug
   // DEBUG && 
-  EnvAssociate.Light && (Lycabinet.prototype._setlog = function(){
+  !EnvAssociate.Light && (Lycabinet.prototype._setlog = function(){
     const presets = [
       'created','mounted', 
       'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 

@@ -194,5 +194,5 @@ export function storageAvailable(type) {
 export const DEBUG = process.env.NODE_ENV !== 'production';
 
 export const EnvAssociate = {
-  Light: false,
+  Light: false, // light mode.
 };

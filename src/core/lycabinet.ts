@@ -6,7 +6,7 @@
  */
 
 import * as _STATUS from '../utils/status.js';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex } from '../utils/util';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex, is_String } from '../utils/util';
 
 /**
  * Init core.
@@ -30,7 +30,7 @@ export function InitCore(Lycabinet){
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
       throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
     }
-    if( !is_PlainObject(root)) 
+    if( !is_String(root)) 
       throw new Error(`[Lycabinet]: The param "root" should be an string, than type ${typeof root}!`);
     this.__root = (root || 'lycabinet') + ''; // The key in storage. Must be a string.
 

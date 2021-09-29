@@ -6,7 +6,7 @@
  */
 
 import * as _STATUS from '../utils/status.js';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex } from '../utils/util.js';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex } from '../utils/util';
 
 /**
  * Init core.
@@ -25,19 +25,20 @@ export function InitCore(Lycabinet){
    * @param { String } root 
    * @param { Object } options 
    */
-  Lycabinet.prototype._init = function(root, {...options}={} ){
+  Lycabinet.prototype._init = function(root: string, options: Record<string, unknown> = {} ){
 
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
       throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
     }
-
+    if( !is_PlainObject(root)) 
+      throw new Error(`[Lycabinet]: The param "root" should be an string, than type ${typeof root}!`);
     this.__root = (root || 'lycabinet') + ''; // The key in storage. Must be a string.
 
     // default options.
     const defaultOptions = {
       root: this.__root, // copy to options.
       autoload: true, // 实例化后 自动调用 __init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
-      lazyPeriod : ~~options.lazyPeriod || 5000, // set the lazy period of lazySave methods.
+      lazyPeriod : ~~(options.lazyPeriod as number) || 5000, // set the lazy period of lazySave methods.
       saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作. （暂时未防止loading完成前修改……）
       autoLazy: true, // Call lazy save automaticly when the save is busy. 
       logEvent: false, // use this to log event globally from scratch
@@ -178,7 +179,7 @@ export function InitCore(Lycabinet){
    * @param {Boolean} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
    */
-  Lycabinet.prototype.clear = function(onCloud = null, concurrent = null){
+  Lycabinet.prototype.clear = function(onCloud: boolean|null = null, concurrent: boolean|null = null){
     // merge default options.
     concurrent = is_Defined(concurrent)? concurrent: this.options.concurrence;
     onCloud = is_Defined(onCloud)? onCloud: !!this.options.outerClear;
@@ -206,8 +207,8 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('cleared', onCloud, concurrent);
     }
-    const onError = (msg)=>{
-      this._trigger("error", "clear", "cloudClearings");
+    const onError = (msg, reason='')=>{
+      this._trigger("error", "clear", "cloudClearings", reason);
       this.status = _STATUS.IDLE;
       this._trigger('cleared', onCloud, concurrent);
       console.error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
@@ -235,7 +236,7 @@ export function InitCore(Lycabinet){
    * @param { Boolean } concurrent Override the default options in `this.options.concurrence`
    * @param { Boolean } deepMerge Using deepAssign instead of Object.assign to merge the data from local and cloud.
    */
-  Lycabinet.prototype.load = function(deepMerge = false, onCloud = null, concurrent = null){
+  Lycabinet.prototype.load = function(deepMerge = false, onCloud: boolean|null = null, concurrent: boolean|null = null){
     // merge default options.
     concurrent = is_Defined(concurrent)? concurrent: this.options.concurrence;
     onCloud = is_Defined(onCloud)? onCloud: !!this.options.outerLoad;
@@ -279,8 +280,8 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('loaded', onCloud, concurrent);
     }
-    const onError = (msg)=>{
-      this._trigger("error", "load", "cloudLoadings");
+    const onError = (msg, reason='')=>{
+      this._trigger("error", "load", "cloudLoadings", reason);
       this.status = _STATUS.IDLE;
       this._trigger('loaded', onCloud, concurrent);
       console.error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
@@ -306,7 +307,7 @@ export function InitCore(Lycabinet){
    * @param {*} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
    */
-  Lycabinet.prototype.save = function(onCloud = null, concurrent = null){
+  Lycabinet.prototype.save = function(onCloud: boolean|null = null, concurrent: boolean|null = null){
     // check the status for mutex protection
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);

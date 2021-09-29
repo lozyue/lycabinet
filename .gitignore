@@ -4,6 +4,7 @@ node_modules
 # test files
 /src/old
 /doc
+/doc/manuscript
 
 # local env files
 .env.local

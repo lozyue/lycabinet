@@ -4,7 +4,7 @@ const {baseConfig, deepAssign} = require("./base.config.js");
 var prodConfig = {
   mode: 'production',
 
-  bail: true, // 保密，保释人
+  bail: true,
 
   devtool: 'source-map', // source map
 
@@ -16,17 +16,13 @@ var prodConfig = {
   output: {
     path: path.resolve(__dirname, '..', 'dist'),
     filename: '[name].min.js',
-    // webpack 5
-    // webpack 5
     library: {
       name: 'Lycabinet',
       type: 'umd', 
       umdNamedDefine: true,
       export: 'default',
     }, 
-    // webapck 打包环境配置
     environment: {
-      // 是否允许箭头函数写法
       arrowFunction: true,
     },
     clean: true,
@@ -34,29 +30,36 @@ var prodConfig = {
   module: {
     strictExportPresence: true,
     rules: [
+      // ts-loader
       {
-        test: /\.[jt]s$/,
+        test: /.ts$/,
+        use: [{
+          loader: 'ts-loader',
+          options: {},
+        }],
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.js$/,
         use: [
-          // babel-loader,
-          // 对象方式进行设置
+          // babel-loader
           {
             loader: 'babel-loader',
             options: {
               presets: [
                 [
-                  // 指定环境插件
                   '@babel/preset-env',
-                  // 配置信息
+                  // babel options.
                   {
-                    // 允许环境和版本
+                    // Target Environment support.
                     targets: {
                       "chrome": "58",
                       // "firefox": "78",
                       "ie": "11",
                     },
-                    // 指定core-js版本 与安装一致
+                    // Specific the version of core-js. It should be the same as installed. 
                     "corejs": "3",
-                    // 使用 core-js 的方法 usage指定按需加载
+                    // `usage` keyword makes treeshake.
                     "useBuiltIns": "usage",
                   }
                 ],
@@ -74,6 +77,6 @@ var prodConfig = {
 
 
 prodConfig = deepAssign(baseConfig, prodConfig);
-// prodConfig = WebpackMerge(baseConfig, prodConfig); // 使用webpack提供的函数进行合并配置
+// prodConfig = WebpackMerge(baseConfig, prodConfig); // merge by the function provided with webpack.
 module.exports = prodConfig;
 

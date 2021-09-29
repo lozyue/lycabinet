@@ -23,7 +23,7 @@ export const arrayIndex = function (arr, index) {
  * @param { Boolean } remove wheather the action is to remove added storage listener.
  */
 export const addStoreListener = (()=>{
-  const invokeQueue = [];
+  const invokeQueue: Function[]= [];
   window.addEventListener("storage", (eve)=>{
     invokeQueue.forEach(func=>{
       func(eve);
@@ -32,7 +32,7 @@ export const addStoreListener = (()=>{
 
   return (invoke, remove = false)=>{
     if(remove) 
-      removeItem(invokeQueue, invoke);
+      removeArrayItem(invokeQueue, invoke);
     else invokeQueue.push(invoke);
   }
 })();
@@ -118,7 +118,15 @@ export function deepClone(val, substituteObj = Object.create(null), cloneFunc = 
   }
 }
 
-export const is_Defined = (v) => (v !== undefined && v !== null);
+export function iterateObject(source: Object, iterate: Function){
+  iterate(source);
+  for(let item in source){
+    if( is_PlainObject(source[item]) )
+      iterate(source, iterate);
+  }
+}
+
+export const is_Defined = (v: any):Boolean => (v !== undefined && v !== null);
 export const is_PlainObject = (obj) => (Object.prototype.toString.call(obj) === '[object Object]');
 export const is_Array = (obj) => (Array.isArray && Array.isArray(obj) || (typeof obj === 'object') && obj.constructor == Array);
 export const is_String = (str) => ((typeof str === 'string') && str.constructor == String);
@@ -136,7 +144,7 @@ export const is_Empty = (val)=>{
 /*
  * Delete the Item in an Array, returning the new Array.
  */
-export var removeItem = (arr, item) => {
+export var removeArrayItem = (arr, item) => {
   if (arr.length) {
     let index = arr.indexOf(item);
     if (index > -1) {
@@ -164,7 +172,7 @@ export function storageAvailable(type) {
     storage = window[type];
     var x = '__storage_test__';
     storage.setItem(x, x);
-    storage.removeItem(x);
+    storage.removeArrayItem(x);
     return true;
   }
   catch (e) {
@@ -183,4 +191,8 @@ export function storageAvailable(type) {
   }
 }
 
-export const DEBUG = true || process.env.NODE_ENV !== 'production';
+export const DEBUG = process.env.NODE_ENV !== 'production';
+
+export const EnvAssociate = {
+  Light: false,
+};

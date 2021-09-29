@@ -2,7 +2,7 @@
  * Event system provided.
  * Have weak hook fundamental at same time.
  */
-import { removeItem, is_Function, DEBUG, arrayIndex } from '../utils/util';
+import { removeArrayItem, is_Function, DEBUG, arrayIndex, EnvAssociate } from '../utils/util';
 
 export function InitEventSystem(Lycabinet){
   const subscriptions = Object.create(null);
@@ -17,7 +17,7 @@ export function InitEventSystem(Lycabinet){
   
   Lycabinet.prototype._off = function(name, handle){
     const actions = subscriptions[name] || (subscriptions[name] = []);
-    removeItem(actions, handle);
+    removeArrayItem(actions, handle);
   };
 
   Lycabinet.prototype._trigger = function(name, ...params){
@@ -25,7 +25,7 @@ export function InitEventSystem(Lycabinet){
     // const results = actions.map(func=>{
     //   return func.apply(this, params);
     // });
-    const results = [];
+    const results: Array<unknown>= [];
     params.push(results);
     for(let index=0; index< actions.length; index++){
       let temp = actions[index].apply(this, params);
@@ -45,17 +45,9 @@ export function InitEventSystem(Lycabinet){
     this._on(name, handleFunc);
   };
 
-  // Lycabinet.prototype._final = function(name, func){
-  //   const actions = subscriptions[name] || (subscriptions[name] = []);
-  //   actions._final = (data)=>(data[data.length - 1]);
-  // }
-  // Lycabinet.prototype._handleFinal = function(res){
-  //   actions._final(res);
-  // }
-
   // for Debug
-  // DEBUG && (Lycabinet.prototype._setlog = function(){
-  (Lycabinet.prototype._setlog = function(){
+  // DEBUG && 
+  EnvAssociate.Light && (Lycabinet.prototype._setlog = function(){
     const presets = [
       'created','mounted', 
       'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 

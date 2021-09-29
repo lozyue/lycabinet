@@ -5,15 +5,15 @@
  * And it do not protect member variable safety.
  */
 
+import { EnvAssociate } from './utils/util';
 import { InitStore } from './core/store';
 import { InitCore } from './core/lycabinet';
 import { InitLazyDepartment } from './core/lazy-support';
 import { InitMixin } from "./core/mixin";
 
 
-// import { addFilter } from './extends/filter';
-// import { addObserver } from './extends/observer';
-
+// set light on
+EnvAssociate.Light = true;
 /**
  * Using fake event system.
  * @param {*} Lycabinet 
@@ -29,7 +29,7 @@ const InitEventSystem = function(Lycabinet){
 
 function Lycabinet(...options){
   if (process.env.NODE_ENV !== 'production' && !(this instanceof Lycabinet) ) {
-    warn('Lycabinet is a constructor and should be called with the `new` keyword');
+    (global.warn || console.warn)('Lycabinet is a constructor and should be called with the `new` keyword');
     return null;
   }
   this._init.apply(this, options);
@@ -41,13 +41,16 @@ InitCore(Lycabinet);
 InitLazyDepartment(Lycabinet);
 InitMixin(Lycabinet);
 
-initImbedding(Lycabinet);
-initAlias(Lycabinet);
-
-// Extends modules optional.
-
+/**
+ * Select Extends modules optional.
+ */ 
 // import { initImbedding } from './core/immbedding';
 // import { initAlias } from './extends/alias';
+// import { addFilter } from './extends/filter';
+// import { addObserver } from './extends/observer';
+
+// initImbedding(Lycabinet);
+// initAlias(Lycabinet);
 
 // addFilter(Lycabinet);
 // addObserver(Lycabinet);

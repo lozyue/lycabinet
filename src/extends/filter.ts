@@ -35,7 +35,7 @@ export function addFilter(Lycabinet){
         let filtered = Object.create(null);
         // set the basement includes.
         if(_this.options.includes.length>0){
-          let includesKeyMap = [];
+          let includesKeyMap: number[]= [];
           _this.options.includes.forEach( (associatedKey,index)=>{
             let current = includesKeyMap[index] = associatedKey.split(".");
             let currentStorage = _this.__storage;
@@ -54,7 +54,7 @@ export function addFilter(Lycabinet){
         // if the `includes` option is not configuratted designed, it will mean includes all by default. 
         }else Object.assign(filtered, _this.__storage);
         // caculating the exclude filtering.
-        let excludesKeyMap = [];
+        let excludesKeyMap: Array<number>= [];
         _this.options.excludes.forEach( (associatedKey, index, arr)=>{
           let current = excludesKeyMap[index] = associatedKey.split(".");
           let currentStorage = filtered;

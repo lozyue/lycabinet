@@ -15,7 +15,7 @@ export function addCheck(Lycabinet){
   Lycabinet.mixin(function(cabinetIns){
     cabinetIns._on("localLoaded", function(finalData, results){
       let final = results.length? arrayIndex(results, -1): finalData;
-      // add pre check for JSON Parse.
+      // add pre-check for JSON Parse.
       if(!final) final = '{}';
       return final;
     });
@@ -42,7 +42,7 @@ export function addCheck(Lycabinet){
    * Listening the storage event from other tabs(pages)
    * by
    */
-  var localContext = {};
+  var localContext: {cabinetIns?: Record<string, unknown>} = {};
   addStoreListener( (eve)=>{
     if(!localContext.cabinetIns){
       console.warn("cabinetIns is not mouted!");
@@ -55,7 +55,7 @@ export function addCheck(Lycabinet){
     if([cabinetIns.__root, ParticalToken].indexOf(eve.key) > -1){
       DEBUG && console.log("[Lycabinet]: Synchronizing data from other tabs...");
       // merge data using default options.
-      cabinetIns.load(true, false, true); // Considering of the latency on cloud, we only synchronize the data on local.
+      (cabinetIns.load as Function)(true, false, true); // Considering of the latency on cloud, we only synchronize the data on local.
     }
   });
 
@@ -90,6 +90,6 @@ export function addCheck(Lycabinet){
   Lycabinet.prototype.notifyTabs = function(){
     const randomToken = new Date().getTime();
     // this will give other pages a notifycation.
-    window.localStorage.setItem(ParticalToken, randomToken);
+    window.localStorage.setItem(ParticalToken, randomToken+'');
   }
 }

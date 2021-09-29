@@ -24,53 +24,50 @@ const baseConfig = {
     // lycabinet_light: './src/light.js',
   },
   output: {
-    // 可以指定 目录 + 名称
+    // support appointed directory
     filename: "[name].js",
-    // 所有资源引入的公共路径 一般用于生产环境 资源引入路径为 publicPath+filename
+    // For production mode. The assets is `publicPath`+filename
     publicPath: '/',
-    // 所有输出包括资源根目录的文件夹地址
     path: resolve(__dirname, 'dist'),
-    // 除了入口文件外的其余分隔chunk部分
+    // Chunk name except of entry file. 
     chunkFilename: '[name]_chunk.js',
-    // webpack 5
+    // In webpack 5
     library: {
       name: 'Lycabinet',
       type: 'umd', 
       umdNamedDefine: true,
       export: 'default',
     }, 
-
-    /* below webpack 5
-    // 作为library导出  值为整个库向外暴露的变量名
-    library: 'Lycabinet', // '[name]',
-    // 导出到的模块
-    libraryTarget: 'umd',
-    // 
-    libraryExport: 'default',
-    // 
-    umdNamedDefine: true, */
-    // webapck 打包环境配置
+    // Environment configurations
     environment: {
-      // 是否允许箭头函数写法
+      // whether allow ES5 Arrow-Function in built code.
       arrowFunction: true,
     }
   },
   resolve: {
-    // 路径别名，允许使用 如@ 代替src目录
+    // path alias in `import` statement.
     alias:{
       '@': resolve(__dirname, './src')
     },
-    // 配置省略路径的后缀名规则 如省略 '.js'
+    // Elliptical post name of files.
     extensions: ['.js','.json','.css','.ts','.vue'],
-    // webpack解析模块寻找的目录
+    // the directory for webpack parse
     modules: [resolve(__dirname, '../node_modules'), 'node_modules'],
   },
   module:{
-    // 将缺失的导出提示成错误而不是警告
+    // Elevate the export missing warn tp an error. 
     strictExportPresence: true,
     rules: [
       {
-        test: /\.[jt]s$/,
+        test: /.ts$/,
+        use: [{
+          loader: 'ts-loader',
+          options: {},
+        }],
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.js$/,
         use: [
           // babel-loader,
           // 对象方式进行设置

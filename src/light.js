@@ -2,7 +2,7 @@
  * The Laction JS(lactionQueue JS) entry file.
  * Light version.
  * Only includes the core build.
- * And it do not protect member variable safety.
+ * For smaller build bundle.
  */
 
 import { EnvAssociate } from './utils/util';
@@ -42,7 +42,7 @@ InitLazyDepartment(Lycabinet);
 InitMixin(Lycabinet);
 
 /**
- * Select Extends modules optional.
+ * Manually select the optional Extends modules.
  */ 
 // import { initImbedding } from './core/immbedding';
 // import { initAlias } from './extends/alias';

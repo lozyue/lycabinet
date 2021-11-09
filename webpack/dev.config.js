@@ -76,7 +76,12 @@ var devConfig = {
   // hot server
   devServer: {
     compress: true,
-    contentBase: path.resolve(__dirname, '..', 'doc'),
+    contentBase: path.resolve(__dirname, '..', 'doc/demo'),
+    // Where makes the point.
+    watchContentBase: true,
+    liveReload: true,
+    injectClient: false,
+
     clientLogLevel: 'none',
     quiet: false,
     port: 8090,

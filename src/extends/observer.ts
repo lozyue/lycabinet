@@ -3,7 +3,7 @@
  * Using Object define
  */
 
-import { DEBUG, deepSupplement, is_Defined, is_PlainObject, iterateObject, removeArrayItem } from "../utils/util";
+import { curveGet, curveSet, DEBUG, deepSupplement, is_Defined, is_PlainObject, iterateObject, removeArrayItem } from "../utils/util";
 
 // change methods.
 let onSetted: Function| null = null;
@@ -33,12 +33,29 @@ export function addObserver(Lycabinet){
     if(!options.initWatch) return false;
     
     this.__storage = deepConvert(this.__storage, options.deepWatch, options.shallowWatch);
+    this.setStore(this.__storage);
   };
 
   // Add a static methods
-  Lycabinet.$set = function(target, name, deep=false, shallow){
-    target[name] = convert(target[name], deep, shallow);
+  Lycabinet.$set = function(target, pathList: string[], deep=false, shallow =true){
+    // CurveSet the target value.
+    return curveSet(target, pathList, (target, kname)=>{
+      target[kname] = convert(target[kname], deep, shallow);
+    }) === true;
   };
+
+  Lycabinet.$get = function(target, pathList: string[]){
+    return curveGet(target, pathList);
+  }
+
+  // Makes the target to be reactive
+  Lycabinet.prototype.$set = function(pathName: string, deep=false, shallow =true){
+    Lycabinet.$set(this.getStore(), pathName.split('.'), deep, shallow);
+  }
+  // Makes the target to be reactive
+  Lycabinet.prototype.$get = function(pathName: string){
+    return curveGet(this.getStore(), pathName.split('.') );
+  }
 };
 
 /**
@@ -69,6 +86,13 @@ function deepConvert(source: Object, deepWatch=true, shallowWatch=false){
   return source;
 }
 
+/**
+ * Convert the normal data to be reactive.
+ *  todo: add the Array type support.
+ * @param source 
+ * @param deepWatch 
+ * @param shallowWatch 
+ */
 function convert(source: Object, deepWatch = false, shallowWatch = true){
   let internalValue: proxyValue = Object.create(null);
   // to do... Add trigger bubbule to its parents.
@@ -102,7 +126,7 @@ function convert(source: Object, deepWatch = false, shallowWatch = true){
   };
   // origin definition
   ["$addListener", "$removeListener"].forEach((hook, index)=>{
-    internalValue[hook] = {value: null} as {value:any, trigger: Function[]};
+    internalValue[hook] = {value: null} as {value: unknown, trigger: Function[]};
     Object.defineProperty(internalValue[hook], "value", {
       value: !index? $addListener: $removeListener,
       ...propConfig

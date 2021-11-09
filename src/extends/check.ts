@@ -51,6 +51,9 @@ export function addCheck(Lycabinet){
 
     const { cabinetIns: cabinetIns } = localContext;
     
+    // Do not reload if current cabinet has shared cabinet.
+    if(cabinetIns.useLoadCache) return true;
+
     // Reload. By default using deeepMerge mode.
     if([cabinetIns.__root, ParticalToken].indexOf(eve.key) > -1){
       DEBUG && console.log("[Lycabinet]: Synchronizing data from other tabs...");
@@ -65,6 +68,9 @@ export function addCheck(Lycabinet){
   Lycabinet.mixin(function(cabinetIns){
     // save the localContext
     localContext.cabinetIns = cabinetIns;
+    cabinetIns._on("loadFromCache", function(){
+      this.useLoadCache = true; 
+    });
 
     // add options for custom database which is not localStorage.
     objectSupplement(cabinetIns.options, {
@@ -84,7 +90,7 @@ export function addCheck(Lycabinet){
   });
 
   /**
-   * If the database in configuration is not `LocalStorage` 
+   * If the database in configuration is not `LocalStorage` (like Env is `sessionStorage`)
    * You should call this method to notify the other pages or set autoNotifyTabs to true.
    */
   Lycabinet.prototype.notifyTabs = function(){

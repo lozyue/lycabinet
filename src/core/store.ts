@@ -3,14 +3,13 @@
  * Basement.
  */
 
-import { is_Defined } from "../utils/util";
+import { DEBUG, is_Defined, is_PlainObject } from "../utils/util";
 
 export function InitStore(Lycabinet){
   const __cabinet = Object.create(null);
-  // var __cabinet = Object.create(null); // Replaceable.
 
   Lycabinet.prototype.hasStore = function(){
-    return is_Defined(__cabinet[this.__root]);
+    return is_Defined(__cabinet[this.__root]) && is_PlainObject(__cabinet[this.__root]);
   }
 
   /**
@@ -29,4 +28,19 @@ export function InitStore(Lycabinet){
   Lycabinet.prototype.setStore = function(cabinet){
     __cabinet[this.__root] = cabinet;
   }
+
+  /**
+   * To clear the inner cache of cabinet.
+   */
+  Lycabinet.prototype.removeStore = function(){
+    __cabinet[this.__root] = void 0;
+  }
+
+  Lycabinet.$removeStore = function(root: string){
+    __cabinet[root] = void 0;
+  }
+
+  DEBUG && (Lycabinet.$getStroe = function(root: string){
+    return __cabinet[root];
+  });
 }

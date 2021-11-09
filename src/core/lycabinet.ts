@@ -101,8 +101,11 @@ export function InitCore(Lycabinet){
     // override the options by the already existed cabinet.
     // this is global shared with all the instance in the page.
     if(this.options.useSharedCabinet && this.hasStore()){
-      this._trigger("loadingFromCache");
+      // this.__storage = cabinet = this.getStore(); // That's useless cause cabinet is just a Object reference.
       this.__storage = this.getStore();
+      // Sync status.
+      Object.assign(cabinet, this.__storage);
+      this._trigger("loadFromCache");
     }
     else{
       this.__storage = this.__storage || cabinet;
@@ -175,7 +178,7 @@ export function InitCore(Lycabinet){
 
   /**
    * Delete the cabinet directly.
-   * But the data may still exist in memory.  
+   * But the data may still exist in memory(RAM).  
    * @param {Boolean} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
    */

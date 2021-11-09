@@ -10,4 +10,6 @@ export function initAlias(Lycabinet){
   Lycabinet.prototype.read = Lycabinet.prototype.get;
 
   Lycabinet.prototype.storage = Lycabinet.prototype.getStore;
+
+  Lycabinet.prototype.getCabinet = Lycabinet.prototype.getStore;
 }

@@ -17,6 +17,59 @@ export const arrayIndex = function (arr, index) {
 }
 
 /**
+ * Get the target curve path value of the source Object.
+ * The curve path is a sequenced array
+ * @param source 
+ * @param objPathes 
+ */
+export function curveGet(source: Object, objPathes: string[]){
+  let interim = source, item = '';
+  for(let index=0; index<objPathes.length; index++){
+    item = objPathes[index];
+    interim = interim && interim[item]
+    if(interim === void 0 ){
+      return void 0;
+    };
+  }
+  return interim;
+}
+
+/**
+ * Set the consistent even curve path of the source Object 
+ * The curve path is a sequenced array // dot split strings.
+ * @param source 
+ * @param objPathes 
+ * @param {unknown|Function} value The value assign for the curve object target. Support callback that if target value is a function you should set it in call back.
+ * @returns { number|true } The number indicator the failed position of the conflict path.
+ */
+export function curveSet(source: Object, objPathes: string[], value: ((target: Object, name: string)=>any)| unknown = null){
+  let interim = source, item = '';
+  for(let index=0; index<objPathes.length; index++){
+    item = objPathes[index];
+    // existed.
+    if(interim[item] ){
+      if(is_Object(interim[item])){
+        interim = interim[item];
+      // Unexpected non-object value.
+      } else {
+        return index;
+      }
+    // non existed and not the last
+    } else if(index+1< objPathes.length){
+      interim = interim[item] = {};
+    // the last
+    } else {
+      // assign the value.
+      if(is_Function(value))
+        (value as Function)(interim, item);
+      else
+        interim[item] = value;
+    }
+  };
+  return true;
+}
+
+/**
  * Centralized management.
  * Add a listener to window storage event.
  * @param { Function } invoke Target invoke function or handle. 
@@ -83,19 +136,20 @@ export function objectSupplement(target, supplement) {
  * @param {*} target 
  * @param {*} supplement 
  */
-export function deepSupplement(target, supplement) {
-  let current = null;
+export function deepSupplement<R extends Object, T extends Object> (target: R|null, supplement: T) {
+  if(!target) return supplement;
+  let current: unknown = null;
   for (let item in supplement) {
-    current = target[item];
+    current = (target as unknown as T)[item];
     if (is_Defined(current)) {
-      if (!is_PlainObject(current)) continue;
-      deepSupplement(current, supplement[item]); // The `current` is a reference which could be assigned.
+      if (!is_PlainObject(current as Object)) continue;
+      deepSupplement(current as Object, supplement[item]); // The `current` is a reference which could be assigned.
     }
     else
       // current = supplement[item];
-      target[item] = supplement[item];
+      (target as unknown as T)[item] = supplement[item];
   }
-  return target;
+  return target as (R & T);
 }
 
 
@@ -126,18 +180,19 @@ export function iterateObject(source: Object, iterate: Function){
   }
 }
 
-export const is_Defined = (v: any):Boolean => (v !== undefined && v !== null);
-export const is_PlainObject = (obj) => (Object.prototype.toString.call(obj) === '[object Object]');
-export const is_Array = (obj) => (Array.isArray && Array.isArray(obj) || (typeof obj === 'object') && obj.constructor == Array);
-export const is_String = (str) => ((typeof str === 'string') && str.constructor == String);
-export const is_Function = (obj) => ((typeof obj === 'function') && obj.constructor == Function);
+export const is_Defined = (v: unknown):Boolean => (v !== undefined && v !== null);
+export const is_Object = (obj: unknown):Boolean => (obj instanceof Object || typeof obj === "object");
+export const is_PlainObject = (obj: unknown):Boolean => (Object.prototype.toString.call(obj) === '[object Object]');
+export const is_Array = (obj: unknown):Boolean => (Array.isArray && Array.isArray(obj) || obj instanceof Array || (typeof obj === 'object') && Object.prototype.toString.call(obj).slice(-6,-1)=== 'Array' );
+export const is_String = (str: Object):Boolean => ((typeof str === 'string') && str.constructor == String);
+export const is_Function = (obj: unknown):Boolean => (obj instanceof Function);
 
-export const is_Empty = (val)=>{
+export const is_Empty = (val: unknown)=>{
   if(!val) return true;
   if(is_Array(val)){
-    return !val.length;
+    return !(val as Array<unknown>).length;
   }else{
-    return !Object.keys(val).length;
+    return !Object.keys((val) as Object).length;
   }
 }
 

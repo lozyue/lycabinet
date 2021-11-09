@@ -51,7 +51,7 @@ export function InitEventSystem(Lycabinet){
     const presets = [
       'created','mounted', 
       'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
-      'loadingFromCache',
+      'loadFromCache',
       'setItem', 'writeLock', 'writeBackflow', 
       'getItem', 'removeItem', 
       'lazySave', 

@@ -1,3 +1,5 @@
+import { DEBUG } from "@/utils/util";
+
 /**
  * Lazy methods support.
  * @param {*} Lycabinet 
@@ -18,7 +20,7 @@ export function InitLazyDepartment(Lycabinet){
       if (judge) {
         lastTime = nowTime; // first!
         // Use default settings
-        console.log("Lazy executed!", nowTime, lastTime, judge)
+        DEBUG && console.log("Lazy executed!", nowTime, lastTime, judge)
         this.save(...params);
       }
       return this;

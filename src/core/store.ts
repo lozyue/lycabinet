@@ -40,7 +40,7 @@ export function InitStore(Lycabinet){
     __cabinet[root] = void 0;
   }
 
-  DEBUG && (Lycabinet.$getStroe = function(root: string){
+  DEBUG && (Lycabinet.$getStore = function(root: string){
     return __cabinet[root];
   });
 }

@@ -9,8 +9,8 @@ var prodConfig = {
   devtool: 'source-map', // source map
 
   entry: {
-    lycabinet: './src/index.js',
-    "lycabinet.light": './src/light.js',
+    lycabinet: './src/index',
+    "lycabinet.light": './src/light',
   },
 
   output: {

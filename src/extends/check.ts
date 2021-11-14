@@ -45,7 +45,7 @@ export function addCheck(Lycabinet){
   var localContext: {cabinetIns?: Record<string, unknown>} = {};
   addStoreListener( (eve)=>{
     if(!localContext.cabinetIns){
-      console.warn("cabinetIns is not mouted!");
+      DEBUG && console.warn("cabinetIns is not mouted!");
       return true;
     }
 

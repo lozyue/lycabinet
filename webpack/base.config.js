@@ -1,15 +1,20 @@
 const { resolve } = require("path");
 
 const is_PlainObject = (obj ) => (Object.prototype.toString.call(obj) === '[object Object]');
-function deepAssign(target, source){
-  for(let item in source){
-    if(!(target[item] && is_PlainObject(target[item])) ){
-      target[item] = source[item];
-    }else{
-      deepAssign(target[item], source[item]);
+function deepAssign(...objs){
+  let merged; 
+  objs.reduce((target, source)=>{
+    for(let item in source){
+      if(!(target[item] && is_PlainObject(target[item])) ){
+        target[item] = source[item];
+      }else{
+        deepAssign(target[item], source[item]);
+      }
     }
-  }
-  return target;
+    merged = target;
+    return target;
+  }, objs[0]); // The third param is to set default value.
+  return merged;
 }
 
 const baseConfig = {
@@ -20,7 +25,7 @@ const baseConfig = {
   mode: "production",
   devtool: 'source-map', // source map
   entry: {
-    lycabinet: "./src/index.js",
+    lycabinet: "./src/index",
     // lycabinet_light: './src/light.js',
   },
   output: {
@@ -47,7 +52,7 @@ const baseConfig = {
   resolve: {
     // path alias in `import` statement.
     alias:{
-      '@': resolve(__dirname, './src')
+      '@': resolve(__dirname, '../src')
     },
     // Elliptical post name of files.
     extensions: ['.js','.json','.css','.ts','.vue'],

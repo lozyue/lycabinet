@@ -1,9 +1,14 @@
 /**
+ * Observer Plugin for Lycabinet
  * Adding an mini observer for storage variable listening.
- * Using Object define
  */
 
-import { curveGet, curveSet, DEBUG, deepSupplement, is_Defined, is_PlainObject, iterateObject, removeArrayItem } from "../utils/util";
+import { 
+  curveGet, curveSet, 
+  removeArrayItem, deepSupplement, is_PlainObject,  
+  DEBUG,
+  is_Function
+} from "../utils/util";
 
 // change methods.
 let onSetted: Function| null = null;
@@ -15,6 +20,10 @@ let onSetted: Function| null = null;
 
 export function addObserver(Lycabinet){
   Lycabinet.prototype.initObserver = function(options: any = {}){
+    // Override the default options
+    Object.assign(options, {
+      deepMerge: true,
+    });
     // configurate options
     deepSupplement(options, {
       lazy: true,
@@ -24,10 +33,9 @@ export function addObserver(Lycabinet){
     });
 
     // init proxy Interceptor.
-    const _this = this;
     onSetted = ()=>{
-      _this._trigger("setItem");
-      options.lazy? _this.lazySave(): _this.save();
+      // this._trigger("setItem");
+      options.lazy? this.lazySave(): this.save();
     };
     
     if(!options.initWatch) return false;
@@ -36,33 +44,49 @@ export function addObserver(Lycabinet){
     this.setStore(this.__storage);
   };
 
-  // Add a static methods
+  // Convert the path target to be reactive. Check redundant Prevent by default.
   Lycabinet.$set = function(target, pathList: string[], deep=false, shallow =true){
+
     // CurveSet the target value.
-    return curveSet(target, pathList, (target, kname)=>{
-      target[kname] = convert(target[kname], deep, shallow);
-    }) === true;
+    return curveSet(target, pathList, (innerTarget, kname)=>{
+      // If target is not existed, set to plain Object; Reset the value if it has been converted.
+      if(!is_PlainObject(innerTarget[kname])){
+        innerTarget[kname] = {};
+      }
+      if(DEBUG && innerTarget[kname]["$addListener"]){
+        console.warn("[Lycabinet]: The target of value could have been converted before!", innerTarget[kname]);
+      }
+      innerTarget[kname] = convert(innerTarget[kname], deep, shallow);
+    });
   };
 
   Lycabinet.$get = function(target, pathList: string[]){
     return curveGet(target, pathList);
   }
 
-  // Makes the target to be reactive
+  /**
+   * Makes the target to be reactive
+   * If the target path is not defined,
+   *  it will be assigned as an Object.
+   * Warning: If the value in path end is assigned with non-PlainObject type value previously,
+   *  the value will be override by `{}`
+   */ 
   Lycabinet.prototype.$set = function(pathName: string, deep=false, shallow =true){
-    Lycabinet.$set(this.getStore(), pathName.split('.'), deep, shallow);
+    return Lycabinet.$set(this.__storage, pathName.split('.'), deep, shallow);
   }
   // Makes the target to be reactive
   Lycabinet.prototype.$get = function(pathName: string){
-    return curveGet(this.getStore(), pathName.split('.') );
+    return curveGet(this.__storage, pathName.split('.') );
   }
 };
 
 /**
  * Proxy Modules.
+ * @author lozyue
+ * @time 2021
  */
-type proxyValue = Record<string, {value: any, trigger: Function[]} > & {_parent: null| proxyValue};
 
+// Convert the Object and its descendant Object from bottom to top.
 function deepConvert(source: Object, deepWatch=true, shallowWatch=false){
   const plainObjQueue: Array<any> = [];
   // reverse for convert
@@ -82,8 +106,7 @@ function deepConvert(source: Object, deepWatch=true, shallowWatch=false){
         arr[index][ref] = convert(item[ref], deepWatch, shallowWatch);
     }
   });
-  source = convert(source, deepWatch, shallowWatch);
-  return source;
+  return convert(source, deepWatch, shallowWatch);
 }
 
 /**
@@ -93,77 +116,78 @@ function deepConvert(source: Object, deepWatch=true, shallowWatch=false){
  * @param deepWatch 
  * @param shallowWatch 
  */
+type OnValueChange = (prop:symbol|string, newValue, oldValue)=>unknown;
+type InternalValueType = {
+  _parent: null | unknown,
+  $addListener: (t:OnValueChange, onProp: string)=>unknown,
+  $removeListener: (h:OnValueChange, onProp: string)=>unknown,
+  // trigger: Record<string|symbol, OnValueChange[]>,
+  triggers: OnValueChange[],
+  value: Object,
+};
 function convert(source: Object, deepWatch = false, shallowWatch = true){
-  let internalValue: proxyValue = Object.create(null);
+  let internalValue: InternalValueType = Object.create(null);
   // to do... Add trigger bubbule to its parents.
-  internalValue["_parent"] = null;
-
-  const $addListener = (trigger: Function, onProp: string)=>{
-    if(internalValue[onProp] === undefined){
-      if(DEBUG) throw new Error(`[Lycabinet]: The prop ${onProp} is not found on source Object!`);
-      return false;
-    }
-    return internalValue[onProp].trigger.push(trigger);
-  };
-  const $removeListener = (handle: Function, onProp: string)=>{
-    if(internalValue[onProp] === undefined){
-      if(DEBUG) throw new Error(`[Lycabinet]: The prop ${onProp} is not found on source Object!`);
-      return false;
-    }
-    return removeArrayItem(internalValue[onProp].trigger, handle);
-  };
+  internalValue._parent = null;
+  internalValue.triggers = [];
+  // save the values
+  internalValue.value = source;
+  // Config it!
   const propConfig = {
     enumerable: false, // which is not enumerable in source either.
     configurable: true,
     writable: false,
   };
-  // save the values
-  for(let rawItem in source){
-    internalValue[rawItem] = {
-      value: source[rawItem],
-      trigger: [],
-    };
+  const $addListener = (onchange: OnValueChange)=>{    
+    return internalValue.triggers.push(onchange);
   };
-  // origin definition
-  ["$addListener", "$removeListener"].forEach((hook, index)=>{
+  const $removeListener = (handle: Function)=>{
+    return removeArrayItem(internalValue.triggers, handle);
+  };
+  // Origin Accessable definition
+  const AccessQueue = ["$addListener", "$removeListener"];
+  AccessQueue.forEach((hook, index)=>{
     internalValue[hook] = {value: null} as {value: unknown, trigger: Function[]};
-    Object.defineProperty(internalValue[hook], "value", {
+    Object.defineProperty(internalValue, hook, {
       value: !index? $addListener: $removeListener,
       ...propConfig
     });
   });
 
+  const refValue = internalValue.value; // For reader accel.
   const HandleRules = {
     get(target, prop, receiver) {
       DEBUG && console.info("Getted", target, prop, receiver, internalValue);
-      // if(['$removeListener', "$addListener"].indexOf(prop) > -1)
-      return internalValue[prop]===undefined? undefined: internalValue[prop].value;
+      if(AccessQueue.indexOf(prop) > -1){
+        return internalValue[prop];
+      }
+      return refValue[prop];
     },
     set(target, prop, newValue, receiver) {
       DEBUG && console.info("Setted", target, prop, receiver, internalValue);
-      // init
-      internalValue[prop] = internalValue[prop] || {
-        value: newValue,
-        trigger: [],
-      };
-      let rawValue = internalValue[prop].value;
+      const rawValue = refValue[prop];
       // consistent deepWatch observer. 
       if(deepWatch){
         if(is_PlainObject(newValue)){
           if(shallowWatch){
-            internalValue[prop].value = convert(newValue, false, true);
+            refValue[prop] = convert(newValue, false, true);
           }else{
-            internalValue[prop].value = deepConvert(newValue, deepWatch, false);
+            refValue[prop] = deepConvert(newValue, deepWatch, false);
           }
         }
       }else
-        internalValue[prop].value = newValue;
+        refValue[prop] = newValue;
 
-      if(rawValue !== newValue){
-        let triggers = internalValue[prop].trigger;
+      if(newValue !== rawValue){
+        let triggers = internalValue.triggers;
         for(let index=0; index< triggers.length; index++){
-          triggers[index](rawValue, newValue);
+          // Check it!
+          if(!is_Function(triggers[index]) ){
+            throw new Error(`The get proxy handler listener added in target is Not a Function which type is ${typeof triggers[index]}`);
+          }
+          triggers[index](prop, newValue, rawValue);
         }
+        if(onSetted!==null) onSetted();
       }
       return true;
     },

@@ -4,7 +4,7 @@
  * (Via to JSON hook)
  * @param {*} Lycabinet 
  */
-import { deepSupplement, is_Defined } from '../utils/util';
+import { DEBUG, deepSupplement, is_Defined } from '../utils/util';
 
 export function addFilter(Lycabinet){
   /**
@@ -30,7 +30,7 @@ export function addFilter(Lycabinet){
       configurable: true,
       enumerable: false, // hide in enumeration.
       value: function(){
-        console.log(_this);
+        DEBUG && console.log(_this);
 
         let filtered = Object.create(null);
         // set the basement includes.

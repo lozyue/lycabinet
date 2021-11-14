@@ -11,7 +11,7 @@ var devConfig = {
   devtool: 'cheap-module-source-map',
 
   entry: {
-    lycabinet: "./src/index.js",
+    lycabinet: "./src/index",
     // "lycabinet.light": './src/light.js',
   },
 

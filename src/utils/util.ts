@@ -10,7 +10,6 @@
 export const arrayIndex = function (arr, index) {
   index = (arr.length + index) % arr.length;
   if (arr[index] === undefined) {
-    console.log(arr, index);
     throw new Error(`The index ${index} in array ${arr.toString()} is overflowed!`);
   }
   return arr[index];
@@ -42,30 +41,29 @@ export function curveGet(source: Object, objPathes: string[]){
  * @param {unknown|Function} value The value assign for the curve object target. Support callback that if target value is a function you should set it in call back.
  * @returns { number|true } The number indicator the failed position of the conflict path.
  */
-export function curveSet(source: Object, objPathes: string[], value: ((target: Object, name: string)=>any)| unknown = null){
+ export function curveSet(source: Object, objPathes: string[], value: ((target: Object, name: string)=>any)| unknown= null){
   let interim = source, item = '';
-  for(let index=0; index<objPathes.length; index++){
+  // not the last one.
+  let index=0;
+  for(; index<objPathes.length-1; index++){
     item = objPathes[index];
-    // existed.
-    if(interim[item] ){
+    if(is_Defined(interim[item]) ){
       if(is_Object(interim[item])){
         interim = interim[item];
-      // Unexpected non-object value.
       } else {
+        // Unexpected non-object value.
         return index;
       }
-    // non existed and not the last
-    } else if(index+1< objPathes.length){
+    } else 
       interim = interim[item] = {};
-    // the last
-    } else {
-      // assign the value.
-      if(is_Function(value))
-        (value as Function)(interim, item);
-      else
-        interim[item] = value;
-    }
   };
+  // the last
+  item = objPathes[index];
+  // assign the value.
+  if(is_Function(value))
+    (value as Function)(interim, item);
+  else
+    interim[item] = value;
   return true;
 }
 

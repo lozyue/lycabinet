@@ -7,40 +7,43 @@ import { removeArrayItem, is_Function, DEBUG, arrayIndex, EnvAssociate } from '.
 export function InitEventSystem(Lycabinet){
   const subscriptions = Object.create(null);
 
-  Lycabinet.prototype._on = function(name, func){
-    if(!is_Function(func)){
+  Lycabinet.prototype._on = function(name: CabinetEventType, func){
+    if(DEBUG &&!is_Function(func)){
       throw new Error("[Laction]:The second parameter of _on method must be a callback function!");
     }
     const actions = subscriptions[name] || (subscriptions[name] = []);
     actions.push(func);
   };
   
-  Lycabinet.prototype._off = function(name, handle){
+  Lycabinet.prototype._off = function(name: CabinetEventType, handle){
     const actions = subscriptions[name] || (subscriptions[name] = []);
     removeArrayItem(actions, handle);
   };
 
-  Lycabinet.prototype._trigger = function(name, ...params){
+  Lycabinet.prototype._trigger = function(name: CabinetEventType, ...params){
     const actions = subscriptions[name] || (subscriptions[name] = []);
-    // const results = actions.map(func=>{
-    //   return func.apply(this, params);
-    // });
     const results: Array<unknown>= [];
     params.push(results);
     for(let index=0; index< actions.length; index++){
       let temp = actions[index].apply(this, params);
       temp && results.push( temp );
     }
+    // add trigger mark
+    if(!actions.counter) actions.counter=0;
+    actions.counter++;
     // if no hook this will returns last params. We can use last params to set default value.
     return results.length? arrayIndex(results, -1): params.length? arrayIndex(params, -1): null;
-    // return this._finalHandle(results);
   };
 
-  Lycabinet.prototype._once = function(name, func){
-    const _this = this;
+  Lycabinet.prototype._once = function(name: CabinetEventType, func, instantOnTriggered: number|boolean = 0){
+    const subs = subscriptions[name] || (subscriptions[name] = []);
+    if(subs.counter && ~~instantOnTriggered <= subs.counter ){
+      func(subs.counter);
+      return ;
+    }
     var handleFunc = function(...params){
-      func.apply(_this, params);
-      _this._off(name, handleFunc);
+      func.apply(this, params);
+      this._off(name, handleFunc);
     }; 
     this._on(name, handleFunc);
   };
@@ -48,7 +51,7 @@ export function InitEventSystem(Lycabinet){
   // for Debug
   // DEBUG && 
   !EnvAssociate.Light && (Lycabinet.prototype._setlog = function(){
-    const presets = [
+    const presets: CabinetEventType[] = [
       'created','mounted', 
       'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
       'loadFromCache',
@@ -75,3 +78,14 @@ export function InitEventSystem(Lycabinet){
     });
   });
 }
+
+export type CabinetEventType =
+'created'|'mounted'| 
+'beforeLoad'| 'beforeLocalLoad'| 'localLoaded'| 'loaded'| 
+'loadFromCache'|
+'setItem'| 'writeLock'| 'writeBackflow'| 
+'getItem'| 'removeItem'| 
+'lazySave'| 
+'beforeSave'| 'beforeLocalSave'| 'localSaved'| 'saved'| 'busy'|
+'beforeClear'| 'beforeLocalClear'| 'localCleared'| 'cleared'|
+'error';

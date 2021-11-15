@@ -12,7 +12,7 @@ type AccessOptions = Partial<{
   onCloud: boolean|null, 
   concurrent: boolean|null,
   deepMerge: boolean,
-  onceDone: (isSuccess: boolean)=>unknown,
+  onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
 }>
 
 /**
@@ -32,7 +32,7 @@ export function InitCore(Lycabinet){
    * @param { String } root 
    * @param { Object } options 
    */
-  Lycabinet.prototype._init = function(root: string, options: Record<string, unknown> = {} ){
+  Lycabinet.prototype.__init = function(root: string, options: Record<string, unknown> = {} ){
 
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
       throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
@@ -44,7 +44,7 @@ export function InitCore(Lycabinet){
     // default options.
     const defaultOptions = {
       root: this.__root, // copy to options.
-      autoload: true, // 实例化后 自动调用 __init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
+      autoload: true, // 实例化后 自动调用._init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
       lazyPeriod : ~~(options.lazyPeriod as number) || 5000, // set the lazy period of lazySave methods.
       saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作
       autoLazy: true, // Call lazy save automaticly when the save is busy. 
@@ -80,6 +80,7 @@ export function InitCore(Lycabinet){
       },
     };
     this.options = deepAssign(defaultOptions, options);
+    // Make the privilege.
     this.__install(this.options);
     
     // root event console log
@@ -88,15 +89,15 @@ export function InitCore(Lycabinet){
     this.status = _STATUS.CREATED; // status token
     this._trigger("created");
     // From now you can have data access.
-    if(this.options.autoload) this.__init(options.initStorage || Object.create(null) );
+    if(this.options.autoload) this._init(options.initStorage || Object.create(null) );
   };
 
   /**
    * Initialize the cabinet storage before 'CURD' manipulation.
    * If autoload is not setted, you should call this manually.
-   * Todo: add reduplicate __init check and warning.
+   * Todo: add reduplicate._init check and warning.
    */
-  Lycabinet.prototype.__init = function(cabinet = Object.create(null)){
+  Lycabinet.prototype._init = function(cabinet = Object.create(null)){
     // write protection backflow
     const writeBackflow = function(){
       if(is_Empty(this.__tempStorage)) return;
@@ -195,7 +196,7 @@ export function InitCore(Lycabinet){
   Lycabinet.prototype.clear = function(option: AccessOptions = {}){
     // merge default options.
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
-    const onCloud = is_Defined(option.onCloud)? option.onCloud: !!this.options.outerClear;
+    const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerClear) as boolean;
     this.status = _STATUS.LOADING;
     this._trigger('beforeClear');
     
@@ -220,7 +221,7 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('cleared', onCloud, concurrent);
       // Callback
-      option.onceDone && option.onceDone(true);
+      option.onceDone && option.onceDone(true, onCloud);
     }
     const onError = (msg, reason='')=>{
       this._trigger("error", "clear", "cloudClearings", reason);
@@ -228,7 +229,7 @@ export function InitCore(Lycabinet){
       this._trigger('cleared', onCloud, concurrent);
       console.error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
 
     // handle this async or asyn easily.
@@ -240,12 +241,12 @@ export function InitCore(Lycabinet){
         this.status = _STATUS.IDLE;
         this._trigger('cleared', onCloud, concurrent);
         // Callback
-        option.onceDone && option.onceDone(true);
+        option.onceDone && option.onceDone(true, onCloud);
       }
     } catch(e){
       onError(e, "unknown");
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }
@@ -260,7 +261,7 @@ export function InitCore(Lycabinet){
   Lycabinet.prototype.load = function(option: AccessOptions = {}){
     // merge default options.
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
-    const onCloud = is_Defined(option.onCloud)? option.onCloud: !!this.options.outerLoad;
+    const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerLoad) as boolean;
     const deepMerge = is_Defined(option.deepMerge)? ~~(option.deepMerge as Boolean): this.options.deepMerge;
     this.status = _STATUS.LOADING;
     this._trigger("beforeLoad");
@@ -302,7 +303,7 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('loaded', onCloud, concurrent);
       // Callback
-      option.onceDone && option.onceDone(true);
+      option.onceDone && option.onceDone(true, onCloud);
     }
     const onError = (msg, reason='')=>{
       this._trigger("error", "load", "cloudLoadings", reason);
@@ -310,7 +311,7 @@ export function InitCore(Lycabinet){
       this._trigger('loaded', onCloud, concurrent);
       console.error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
 
     // handle this async or asyn easily.
@@ -322,12 +323,12 @@ export function InitCore(Lycabinet){
         this.status = _STATUS.IDLE;
         this._trigger('loaded', onCloud, concurrent);
         // Callback
-        option.onceDone && option.onceDone(true);
+        option.onceDone && option.onceDone(true, onCloud);
       }
     } catch(e){
       onError(e, "unknown");
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }
@@ -339,14 +340,14 @@ export function InitCore(Lycabinet){
    */
   Lycabinet.prototype.save = function(option: AccessOptions = {}){
     // merge default options.
-    const onCloud = is_Defined(option.onCloud)? option.onCloud: !!this.options.outerSave;
+    const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerSave) as boolean;
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
 
     // check the status for mutex protection
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
     if( check ){
-      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Current Status: ${this.status} \nSet 'saveMutex' false to disable it.`);
+      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Current Status: ${this.status} .Set 'saveMutex' false to disable it.`);
       this._trigger("busy");
       this.options.autoLazy && this.lazySave(onCloud, concurrent);
       return this;
@@ -379,7 +380,7 @@ export function InitCore(Lycabinet){
       this.status = _STATUS.IDLE;
       this._trigger('saved', onCloud, concurrent);
       // Callback
-      option.onceDone && option.onceDone(true);
+      option.onceDone && option.onceDone(true, onCloud);
     }
     const onError = (msg, reason="cloudSavings")=>{
       this._trigger("error", "save", reason);
@@ -387,7 +388,7 @@ export function InitCore(Lycabinet){
       this._trigger('saved', onCloud, concurrent);
       console.error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
 
     // handle this async or asyn easily.
@@ -399,12 +400,12 @@ export function InitCore(Lycabinet){
         this.status = _STATUS.IDLE;
         this._trigger('saved', onCloud, concurrent);
         // Callback
-        option.onceDone && option.onceDone(true);
+        option.onceDone && option.onceDone(true, onCloud);
       }
     } catch(e){
       onError(e, 'unknown');
       // Callback
-      option.onceDone && option.onceDone(false);
+      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }

@@ -95,7 +95,7 @@ settings.save();
 | option      | 描述                                                                 | type    | default |
 | ----------- | -------------------------------------------------------------------- | ------- | ------- |
 | initStorage | 初始化的数据对象引用(之后的`load,set,save,clear`等方法均其上进行)      | Object  | {}      |
-| autoload    | 初始化时是否自动调用加载方法, 如果设为 false 禁用后, 需要手动调用实例的__init和load方法 | Boolean | true    |
+| autoload    | 初始化时是否自动调用加载方法, 如果设为 false 禁用后, 需要手动调用实例._init和load方法 | Boolean | true    |
 | saveMutex   | 是否启用保存动作状态互斥                                                     | Boolean | true    |
 | lazyPeriod | 懒保存节流周期。单位: ms,影响`lazySave`和`lazySet`方法的节流。挂载`LactionJS`替换为Laction instance的周期 | Integer | 5000 |
 | concurrence | 是否允许本地和外部存储并行，设置为false时且未设定外部存储将不会进行本地存储    | Boolean | true    |
@@ -210,7 +210,7 @@ lycabinet_instance.save();
 
 如果你确实需要看到这些事件，你只需在初始化时传递选项 autoload为 false, 然后调用实例 _setlog 方法，
 
-再手动调用 __init 进行初始化，这样就可以看到 created 之后的事件.
+再手动调用._init 进行初始化，这样就可以看到 created 之后的事件.
 
 如果需要连同 created 事件一起打印，清晰的看到整个生命周期的话，
 

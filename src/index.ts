@@ -23,14 +23,14 @@ function Lycabinet(...options){
     (global.warn || console.warn)('Lycabinet is a constructor and should be called with the `new` keyword');
     return null;
   }
-  this._init.apply(this, options);
+  this.__init.apply(this, options);
 }
 
 InitStore(Lycabinet);
+InitMixin(Lycabinet);
 InitEventSystem(Lycabinet);
 InitCore(Lycabinet);
 InitLazyDepartment(Lycabinet);
-InitMixin(Lycabinet);
 
 initImbedding(Lycabinet);
 initAlias(Lycabinet);

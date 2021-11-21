@@ -1,13 +1,17 @@
 /**
- * 提供接口利用 laction 作为支持
- * 利用Laction 进行 lazySave性能进一步优化和增强为节流防抖双支持模式.
- * 需要抽离后置执行挂载插件
- * 不影响单独使用
- * 需要在注册LactionJS实例后才能install成功
- * 不能加prototype，仅声明成构造器属性即可
+ * 提供接口利用 laction 作为支持, 影响后续所有实例
+ * 利用Laction 进行 lazySave 性能进一步优化和增强为节流防抖双支持模式.
+ * 
+ * // Usage:
+ * import Lycabinet
+ * // Existed instance of Laction
+ * lactionIns.use(Lycabinet);
+ * 
+ * When enabled immbedding, you should manually call the `destroy` method
+ *  to discard the instance(Especially there is not only one).
  */
 
-import { deepSupplement } from "../utils/util";
+import { DEBUG, deepSupplement } from "../utils/util";
 
 export function initImbedding(Lycabinet){
   // Provide as a Laction plugins.
@@ -22,31 +26,46 @@ export function initImbedding(Lycabinet){
         }
       });
 
+      let LazyRootKey = lycabinetIns.__root+'_lazy';
+      // Accept postfix.
+      const LazyKey = lactionIns.testHookName(LazyRootKey, true);
+      lycabinetIns.getLazyKey = ()=>LazyKey;
+
       // Register the lazy methods hook.
       lactionIns.registerHook(
         {
-          name: lycabinetIns.__root+'_lazysave',
+          name: LazyKey,
           // apply period throttle.s
           once: true, 
           // apply period debounce.
           debounce: true, 
           // level: 3, // 1 Root 消息级钩子 // 默认普通消息
-          actions: (...params)=>{ 
+          action: (...params)=>{
+            // Find a big question of save action rewrite with laction if there are multi-instances.
+            // console.log(lycabinetIns)
+            
             lycabinetIns.save(...params) 
-          }, 
+          },
         },
       );
+
+      lycabinetIns._on("destroied", ()=>{
+        lactionIns.registerHook(LazyKey);
+      });
     });
 
     /**
      * lazySave method update
-     * OverWrite lazy methods with laction instances. And give it better performance and even visualizaztion.
+     * OverWrite lazy methods with laction instances. 
+     *  And give it better performance and even visualizaztion.
      * @param {*} lazyOrbitId the added params for laction. 
      */
     Lycabinet.prototype.lazySave = function(...params){
-      params.unshift(`${this.__root}_lazysave`)
+      params.unshift(`${this.__root}_lazy`);
       // bubble with auto period throttle and debounce.
-      lactionIns.bubble(params, this.options.useLaction.lazyOrbitId);
+      
+      lactionIns.bubble(params, this.options.useLaction.lazyOrbitId, false);
+      this._trigger("lazySave");
       return this;
     };
   };

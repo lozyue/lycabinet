@@ -26,13 +26,13 @@ type AccessOptions = Partial<{
  * 注意：以上网络请求的外部通信方法需要返回一个Promise对象.
  */
 export function InitCore(Lycabinet){
-  
+  const Proto = Lycabinet.prototype;
   /**
    * The configuration initialization.
    * @param { String } root 
    * @param { Object } options 
    */
-  Lycabinet.prototype.__init = function(root: string, options: Record<string, unknown> = {} ){
+  Proto.__init = function(root: string, options: Record<string, unknown> = {} ){
 
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
       throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
@@ -63,7 +63,7 @@ export function InitCore(Lycabinet){
       }, 
       
       // Decide weather enable local cabinet when cloud is setted. Auto judge.
-      concurrence: !(options.outerLoad && options.outerSave && options.outerClear),
+      concurrent: !(options.outerLoad && options.outerSave && options.outerClear),
       // cloud loads example options. The inner pointer `this` is pointed to `cabinet.options` if not set by arrow function.
       outerLoad: ([root, cabinet], success, error)=>{
         // data = load(root)
@@ -88,7 +88,7 @@ export function InitCore(Lycabinet){
 
     this.status = _STATUS.CREATED; // status token
     this._trigger("created");
-    // From now you can have data access.
+    
     if(this.options.autoload) this._init(options.initStorage || Object.create(null) );
   };
 
@@ -97,7 +97,7 @@ export function InitCore(Lycabinet){
    * If autoload is not setted, you should call this manually.
    * Todo: add reduplicate._init check and warning.
    */
-  Lycabinet.prototype._init = function(cabinet = Object.create(null)){
+  Proto._init = function(cabinet = Object.create(null)){
     // write protection backflow
     const writeBackflow = function(){
       if(is_Empty(this.__tempStorage)) return;
@@ -123,7 +123,7 @@ export function InitCore(Lycabinet){
       if(this.options.shareCabinet)
         this.setStore(this.__storage);
       // Auto load. Only when the cabinet in using is private.
-      if(this.options.autoload) this.load(false); // default using shallow assign.
+      if(this.options.autoload) this.load(); // default using shallow assign.
       else this.status = _STATUS.IDLE; // Amend the status error.
     }
 
@@ -135,7 +135,7 @@ export function InitCore(Lycabinet){
   /**
    * Test the cabinet is busy or not.
    */
-  Lycabinet.prototype.isVacant = function(){
+  Proto.isVacant = function(){
     return this.status===_STATUS.IDLE;
   }
 
@@ -145,7 +145,7 @@ export function InitCore(Lycabinet){
    * @param {*} key 
    * @param {*} value 
    */
-  Lycabinet.prototype.set = function(key, value){
+  Proto.set = function(key, value){
     const MutexStatus = [_STATUS.LOADING, _STATUS.CLEARING];
     // add write protection.    
     if(MutexStatus.indexOf(this.status) > -1){
@@ -165,7 +165,7 @@ export function InitCore(Lycabinet){
    * Please don't read from loading and clearing stream.
    * @param {*} key 
    */
-  Lycabinet.prototype.get = function(key){
+  Proto.get = function(key){
     let backValue = this.__storage[key];
     this._trigger('getItem', key, backValue);
     return backValue;
@@ -174,7 +174,7 @@ export function InitCore(Lycabinet){
   /**
    * Delete an item by key.
    */ 
-  Lycabinet.prototype.remove = function(keys){
+  Proto.remove = function(keys){
     let removed = false;
     arbitraryFree(keys, (k)=>{
       // Though it isn't disappeared immediately, But after JSON parse and stringify manipulations this will be cleared.
@@ -191,11 +191,11 @@ export function InitCore(Lycabinet){
    * Delete the cabinet directly.
    * But the data may still exist in memory(RAM).  
    * @param {Boolean} onCloud 
-   * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
+   * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
-  Lycabinet.prototype.clear = function(option: AccessOptions = {}){
+  Proto.clear = function(option: AccessOptions = {}){
     // merge default options.
-    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
+    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerClear) as boolean;
     this.status = _STATUS.LOADING;
     this._trigger('beforeClear');
@@ -206,7 +206,7 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalClear', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local clear action is ignored by options: concurrence=false.");
+        DEBUG && console.log("[Lycabinet]: The local clear action is ignored by options: concurrent=false.");
         return this;
       }
       const localApi = this.options.localInterface;
@@ -255,12 +255,12 @@ export function InitCore(Lycabinet){
    * Load the cabinet on initialization.
    * The local load is faster than cloud.
    * @param { Boolean } onCloud 
-   * @param { Boolean } concurrent Override the default options in `this.options.concurrence`
+   * @param { Boolean } concurrent Override the default options in `this.options.concurrent`
    * @param { Boolean } deepMerge Using deepAssign instead of Object.assign to merge the data from local and cloud.
    */
-  Lycabinet.prototype.load = function(option: AccessOptions = {}){
+  Proto.load = function(option: AccessOptions = {}){
     // merge default options.
-    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
+    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerLoad) as boolean;
     const deepMerge = is_Defined(option.deepMerge)? ~~(option.deepMerge as Boolean): this.options.deepMerge;
     this.status = _STATUS.LOADING;
@@ -273,7 +273,7 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalLoad', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local load action is ignored by options: concurrence=false.");
+        DEBUG && console.log("[Lycabinet]: The local load action is ignored by options: concurrent=false.");
         return this;
       }
       const localApi = this.options.localInterface;
@@ -336,12 +336,12 @@ export function InitCore(Lycabinet){
   /**
    * Save the cabinet to database or cloud.
    * @param {*} onCloud 
-   * @param {Boolean} concurrent Override the default options in `this.options.concurrence`
+   * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
-  Lycabinet.prototype.save = function(option: AccessOptions = {}){
+  Proto.save = function(option: AccessOptions = {}){
     // merge default options.
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerSave) as boolean;
-    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrence;
+    const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
 
     // check the status for mutex protection
     let check = this.options.saveMutex && !this.isVacant();
@@ -361,7 +361,7 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalSave', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrence=false.");
+        DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrent=false.");
         return this;
       }
       const localApi = this.options.localInterface;
@@ -415,7 +415,7 @@ export function InitCore(Lycabinet){
    * Iterate the first hierarchy with callback.
    * @param {Function: (item, index)=>any }} callback with two params
    */
-  Lycabinet.prototype.forEach = function(callback){
+  Proto.forEach = function(callback){
     let item, index = 0;
     for(let key in this.__storage){
       item = this.__storage[key];
@@ -428,11 +428,20 @@ export function InitCore(Lycabinet){
    * Iterate the first hierarchy with callback.
    * @param {Function: (item, index)=>any }} callback  with two params
    */
-  Lycabinet.prototype.map = function(callback){
+  Proto.map = function(callback){
     let item, index = 0;
     for(let key in this.__storage){
       item = this.__storage[key];
       this.__storage[key] = callback(item, index++); // only two params.
     }
   }
+
+  /**
+   * For custom destroy.
+   * Call it to clear the sideEffect produce by kinds of plugins.
+   */
+  Proto.destroy = function(){
+    this._trigger("destroied");
+  }
+
 }

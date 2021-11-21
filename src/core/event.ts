@@ -62,7 +62,7 @@ export function InitEventSystem(Lycabinet){
   
     // for Debug
     // DEBUG && 
-    !EnvAssociate.Light && (Lycabinet.prototype._setlog = function(){
+    !EnvAssociate.Light && (self._setlog = function(){
       const presets: CabinetEventType[] = [
         'created','mounted', 
         'beforeLoad', 'beforeLocalLoad', 'localLoaded', 'loaded', 
@@ -72,7 +72,7 @@ export function InitEventSystem(Lycabinet){
         'lazySave', 
         'beforeSave', 'beforeLocalSave', 'localSaved', 'saved', 'busy',
         'beforeClear', 'beforeLocalClear', 'localCleared', 'cleared',
-        'error',
+        'error', 'destroied',
       ];
   
       new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{
@@ -88,6 +88,7 @@ export function InitEventSystem(Lycabinet){
         // add handle
         subscriptions[item]._logHandle = logHandle;
       });
+
     });
     
   });
@@ -181,4 +182,5 @@ export type CabinetEventType =
 'lazySave'| 
 'beforeSave'| 'beforeLocalSave'| 'localSaved'| 'saved'| 'busy'|
 'beforeClear'| 'beforeLocalClear'| 'localCleared'| 'cleared'|
-'error';
+'error'|
+'destroied';

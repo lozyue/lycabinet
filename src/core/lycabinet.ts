@@ -6,12 +6,13 @@
  */
 
 import * as _STATUS from '@/utils/status';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, arrayIndex, is_String } from '@/utils/util';
+import { LogToken } from '@/utils/util';
+import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, is_String } from '@/utils/util';
 
 type AccessOptions = Partial<{
   onCloud: boolean|null, 
   concurrent: boolean|null,
-  deepMerge: boolean,
+  deepMerge: boolean|null,
   onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
 }>
 
@@ -26,6 +27,10 @@ type AccessOptions = Partial<{
  * 注意：以上网络请求的外部通信方法需要返回一个Promise对象.
  */
 export function InitCore(Lycabinet){
+  // Constructor Options
+  Lycabinet.DEBUG = true;
+  Lycabinet.SeparateLog = false;
+
   const Proto = Lycabinet.prototype;
   /**
    * The configuration initialization.
@@ -35,10 +40,10 @@ export function InitCore(Lycabinet){
   Proto.__init = function(root: string, options: Record<string, unknown> = {} ){
 
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
-      throw new Error("[Lycabinet]:The type of the provided option `initStorage` must be an Object!");
+      throw new Error(`${LogToken}The type of the provided option "initStorage" must be an Object!`);
     }
     if( !is_String(root)) 
-      throw new Error(`[Lycabinet]: The param "root" should be an string, than type ${typeof root}!`);
+      throw new Error(`${LogToken}The param "root" should be an string, than type ${typeof root}!`);
     this.__root = (root || 'lycabinet') + ''; // The key in storage. Must be a string.
 
     // default options.
@@ -63,33 +68,23 @@ export function InitCore(Lycabinet){
       }, 
       
       // Decide weather enable local cabinet when cloud is setted. Auto judge.
-      concurrent: !(options.outerLoad && options.outerSave && options.outerClear),
+      concurrent: !!(options.outerLoad || options.outerSave || options.outerClear),
       // cloud loads example options. The inner pointer `this` is pointed to `cabinet.options` if not set by arrow function.
-      outerLoad: ([root, cabinet], success, error)=>{
-        // data = load(root)
-        let data = {};
-        success(data);
-      },
-      outerSave: ([root, cabinet], success, error)=>{
-        // save(root, cabinet)
-        success();
-      },
-      outerClear: ([root, cabinet], success, error)=>{
-        // clear(root)
-        success();
-      },
+      outerLoad: null,
+      outerSave: null,
+      outerClear: null,
     };
     this.options = deepAssign(defaultOptions, options);
     // Make the privilege.
-    this.__install(this.options);
+    this.__install(defaultOptions);
     
     // root event console log
-    if(this.options.logEvent) this._setlog();
+    if(defaultOptions.logEvent) this._setlog();
 
     this.status = _STATUS.CREATED; // status token
     this._trigger("created");
     
-    if(this.options.autoload) this._init(options.initStorage || Object.create(null) );
+    if(defaultOptions.autoload) this._init(options.initStorage || Object.create(null) );
   };
 
   /**
@@ -111,7 +106,8 @@ export function InitCore(Lycabinet){
 
     // override the options by the already existed cabinet.
     // this is global shared with all the instance in the page.
-    if(this.options.useSharedCabinet && this.hasStore()){
+    const isLoadFromCache = this.options.useSharedCabinet && this.hasStore();
+    if(isLoadFromCache){
       // this.__storage = cabinet = this.getStore(); // That's useless cause cabinet is just a Object reference.
       this.__storage = this.getStore();
       // Sync status.
@@ -122,13 +118,16 @@ export function InitCore(Lycabinet){
       this.__storage = this.__storage || cabinet;
       if(this.options.shareCabinet)
         this.setStore(this.__storage);
-      // Auto load. Only when the cabinet in using is private.
-      if(this.options.autoload) this.load(); // default using shallow assign.
-      else this.status = _STATUS.IDLE; // Amend the status error.
     }
 
     this.status = _STATUS.MOUNTED;
     this._trigger("mounted"); // Interior cabinet access attainable.
+
+    if(!isLoadFromCache){
+      // Auto load. Only when the cabinet in using is private.
+      if(this.options.autoload) this.load(); // default using shallow assign.
+      else this.status = _STATUS.IDLE; // Amend the status error.
+    }
     return this;
   }
 
@@ -183,7 +182,7 @@ export function InitCore(Lycabinet){
         removed = true
       }
     }); 
-    this._trigger('removeItem', keys, removed);
+    removed && this._trigger('removeItem', keys, removed);
     return this;
   }
 
@@ -206,7 +205,7 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalClear', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local clear action is ignored by options: concurrent=false.");
+        DEBUG && console.log(`${LogToken}The local clear action is ignored by options: concurrent:false.`);
         return this;
       }
       const localApi = this.options.localInterface;
@@ -223,11 +222,11 @@ export function InitCore(Lycabinet){
       // Callback
       option.onceDone && option.onceDone(true, onCloud);
     }
-    const onError = (msg, reason='')=>{
-      this._trigger("error", "clear", "cloudClearings", reason);
+    const onError = (msg, reason='cloudClearings')=>{
+      this._trigger("error", "clear", reason);
       this.status = _STATUS.IDLE;
       this._trigger('cleared', onCloud, concurrent);
-      console.error(`[Lycabinet]: Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
+      onCloud && console.error(`${LogToken}Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
       option.onceDone && option.onceDone(false, onCloud);
     }
@@ -245,8 +244,6 @@ export function InitCore(Lycabinet){
       }
     } catch(e){
       onError(e, "unknown");
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }
@@ -273,7 +270,7 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalLoad', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local load action is ignored by options: concurrent=false.");
+        DEBUG && console.log("${LogToken}The local load action is ignored by options: concurrent=false.");
         return this;
       }
       const localApi = this.options.localInterface;
@@ -293,7 +290,7 @@ export function InitCore(Lycabinet){
     const pack = [this.__root, this.__storage];
     const onSuccess = (data)=>{
       if(!is_Defined(data) || !is_PlainObject(data))
-        throw new Error(`[Lycabinet]: Load cabinet with empty 'data' which type is ${typeof data}`);
+        throw new Error(`${LogToken}Load cabinet with empty 'data' which type is ${typeof data}`);
         
       if(deepMerge)
         deepAssign(this.__storage, data);
@@ -305,11 +302,11 @@ export function InitCore(Lycabinet){
       // Callback
       option.onceDone && option.onceDone(true, onCloud);
     }
-    const onError = (msg, reason='')=>{
-      this._trigger("error", "load", "cloudLoadings", reason);
+    const onError = (msg, reason='cloudLoadings')=>{
+      this._trigger("error", "load", reason);
       this.status = _STATUS.IDLE;
       this._trigger('loaded', onCloud, concurrent);
-      console.error(`[Lycabinet]: Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
+      onCloud && console.error(`${LogToken}Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
       option.onceDone && option.onceDone(false, onCloud);
     }
@@ -327,14 +324,13 @@ export function InitCore(Lycabinet){
       }
     } catch(e){
       onError(e, "unknown");
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }
 
   /**
    * Save the cabinet to database or cloud.
+   * The event `localSaved` is called before real action for storage hook.
    * @param {*} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
@@ -347,8 +343,8 @@ export function InitCore(Lycabinet){
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
     if( check ){
-      DEBUG && console.log(`[Lycabinet]: The 'save' manipulation is deserted for busy. Current Status: ${this.status} .Set 'saveMutex' false to disable it.`);
-      this._trigger("busy");
+      DEBUG && console.log(`${LogToken}The 'save' manipulation is deserted for busy. Current Status: ${this.status} .Set 'saveMutex' false to disable it.`);
+      this._trigger("busy", this.status);
       this.options.autoLazy && this.lazySave(onCloud, concurrent);
       return this;
     }
@@ -361,15 +357,15 @@ export function InitCore(Lycabinet){
       this._trigger('beforeLocalSave', IgnoreLocal); // give an status token before invoke.
 
       if(IgnoreLocal){
-        DEBUG && console.log("[Lycabinet]: The local save action is ignored by options: concurrent=false.");
+        DEBUG && console.log("${LogToken}The local save action is ignored by options: concurrent=false.");
         return this;
       }
-      const localApi = this.options.localInterface;
       // trigger hook event beforeLocalSave. Should have a return value in event. (data)=>{ return handle(data); }
       let finalData = JSON.stringify(this.__storage );
-      // trigger hook event after call local database to save the value. Should return a String value in event.
+      // trigger hook event before call local database to save the value for data interceptor.
       finalData = this._trigger('localSaved', finalData); // Only take effect on the last element.
 
+      const localApi = this.options.localInterface;
       localApi.database[localApi.setItem](this.__root, finalData);
     };
     
@@ -386,7 +382,7 @@ export function InitCore(Lycabinet){
       this._trigger("error", "save", reason);
       this.status = _STATUS.IDLE;
       this._trigger('saved', onCloud, concurrent);
-      console.error(`[Lycabinet]: Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
+      onCloud && console.error(`${LogToken}Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
       // Callback
       option.onceDone && option.onceDone(false, onCloud);
     }
@@ -404,8 +400,6 @@ export function InitCore(Lycabinet){
       }
     } catch(e){
       onError(e, 'unknown');
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
     }
     return this;
   }
@@ -417,9 +411,10 @@ export function InitCore(Lycabinet){
    */
   Proto.forEach = function(callback){
     let item, index = 0;
-    for(let key in this.__storage){
-      item = this.__storage[key];
-      callback(item, index++); // only two params.
+    const cabinet = this.__storage;
+    for(let key in cabinet){
+      item = cabinet[key];
+      callback(item, index++, cabinet); // only two params.
     }
   }
 
@@ -429,10 +424,11 @@ export function InitCore(Lycabinet){
    * @param {Function: (item, index)=>any }} callback  with two params
    */
   Proto.map = function(callback){
-    let item, index = 0;
-    for(let key in this.__storage){
-      item = this.__storage[key];
-      this.__storage[key] = callback(item, index++); // only two params.
+    let item;
+    const cabinet = this.__storage;
+    for(let key in cabinet){
+      item = cabinet[key];
+      cabinet[key] = callback(item, key, cabinet); // only two params.
     }
   }
 

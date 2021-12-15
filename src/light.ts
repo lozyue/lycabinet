@@ -19,11 +19,15 @@ EnvAssociate.Light = true;
  * @param {*} Lycabinet 
  */
 const InitEventSystem = function(Lycabinet){
-  Lycabinet.prototype._setlog = new Function();
-  Lycabinet.prototype._once = new Function();
-  Lycabinet.prototype._trigger = new Function();
-  Lycabinet.prototype._off = new Function();
-  Lycabinet.prototype._on = new Function();
+  const Protos = Lycabinet.prototype;
+  const FakeFunc = new Function();
+
+  Protos._isHappend = FakeFunc;
+  Protos._setlog = FakeFunc;
+  Protos._once = FakeFunc;
+  Protos._trigger = FakeFunc;
+  Protos._off = FakeFunc;
+  Protos._on = FakeFunc;
 }
 
 
@@ -45,14 +49,22 @@ InitMixin(Lycabinet);
  * Manually select the optional Extends modules.
  */ 
 // import { initImbedding } from './core/immbedding';
-// import { initAlias } from './extends/alias';
-// import { addFilter } from './extends/filter';
-// import { addObserver } from './extends/observer';
-
 // initImbedding(Lycabinet);
-// initAlias(Lycabinet);
 
+// import { addFilter } from './extends/filter';
 // addFilter(Lycabinet);
+
+// import { addObserver } from './extends/observer';
 // addObserver(Lycabinet);
+
+// import { addCheck } from './extends/check';
+// addCheck(Lycabinet);
+
+// import { addZip } from './extends/zip';
+// addZip(Lycabinet);
+
+import { initAlias } from './extends/alias';
+initAlias(Lycabinet);
+
 
 export default Lycabinet;

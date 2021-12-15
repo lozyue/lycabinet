@@ -4,12 +4,13 @@
  */
 
 export function initAlias(Lycabinet){
+  const Proto = Lycabinet.prototype;
   
-  Lycabinet.prototype.delete = Lycabinet.prototype.remove;
+  Proto.delete = Proto.remove;
 
-  Lycabinet.prototype.read = Lycabinet.prototype.get;
+  Proto.read = Proto.get;
 
-  Lycabinet.prototype.storage = Lycabinet.prototype.getStore;
+  Proto.storage = Proto.getStore;
 
-  Lycabinet.prototype.getCabinet = Lycabinet.prototype.getStore;
+  Proto.getCabinet = Proto.getStore;
 }

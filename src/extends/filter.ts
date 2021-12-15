@@ -18,8 +18,8 @@ export function addFilter(Lycabinet){
       this.setFilter(); // auto set.
     else{
       deepSupplement(opt, {
-        includes: [], // vacant equal to all!
-        excludes: [],
+        includes: [], // vacant equals to all!
+        excludes: [], // vacant equals to none.
       });
     }
   });
@@ -30,8 +30,6 @@ export function addFilter(Lycabinet){
       configurable: true,
       enumerable: false, // hide in enumeration.
       value: function(){
-        DEBUG && console.log(_this);
-
         let filtered = Object.create(null);
         // set the basement includes.
         if(_this.options.includes.length>0){
@@ -51,14 +49,14 @@ export function addFilter(Lycabinet){
                 filtered[current[i]] = currentStorage;
             });
           });
-        // if the `includes` option is not configuratted designed, it will mean includes all by default. 
+        // if the configuration of `includes` option is not designed, it will mean exactly includes all by default. 
         }else Object.assign(filtered, _this.__storage);
         // caculating the exclude filtering.
         let excludesKeyMap: Array<number>= [];
         _this.options.excludes.forEach( (associatedKey, index, arr)=>{
           let current = excludesKeyMap[index] = associatedKey.split(".");
           let currentStorage = filtered;
-          // instead of forEach to control logical better.
+          // instead of forEach for better logical control.
           for(let i=0; i<current.length; i++){
             if(!is_Defined(filtered[current[0]]) ) break;
 

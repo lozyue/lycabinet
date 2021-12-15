@@ -27,9 +27,10 @@ export function initImbedding(Lycabinet){
       });
 
       let LazyRootKey = lycabinetIns.__root+'_lazy';
-      // Accept postfix.
+      // Accept pre-redundant postfix.
       const LazyKey = lactionIns.testHookName(LazyRootKey, true);
       lycabinetIns.getLazyKey = ()=>LazyKey;
+      lycabinetIns._lazyKey = LazyKey;
 
       // Register the lazy methods hook.
       lactionIns.registerHook(
@@ -50,7 +51,7 @@ export function initImbedding(Lycabinet){
       );
 
       lycabinetIns._on("destroied", ()=>{
-        lactionIns.registerHook(LazyKey);
+        lactionIns.unregisterHook(LazyKey);
       });
     });
 
@@ -61,7 +62,8 @@ export function initImbedding(Lycabinet){
      * @param {*} lazyOrbitId the added params for laction. 
      */
     Lycabinet.prototype.lazySave = function(...params){
-      params.unshift(`${this.__root}_lazy`);
+      // Get the key of Auto generated.
+      params.unshift( this._lazyKey );
       // bubble with auto period throttle and debounce.
       
       lactionIns.bubble(params, this.options.useLaction.lazyOrbitId, false);

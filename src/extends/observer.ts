@@ -7,7 +7,8 @@ import {
   curveGet, curveSet, 
   removeArrayItem, deepSupplement, is_PlainObject,  
   DEBUG,
-  is_Function
+  is_Function,
+  LogToken
 } from "../utils/util";
 
 // change methods.
@@ -54,7 +55,7 @@ export function addObserver(Lycabinet){
         innerTarget[kname] = {};
       }
       if(DEBUG && innerTarget[kname]["$addListener"]){
-        console.warn("[Lycabinet]: The target of value could have been converted before!", innerTarget[kname]);
+        console.warn(`${LogToken}The target have been converted before!`, innerTarget[kname]);
       }
       innerTarget[kname] = convert(innerTarget[kname], deep, shallow);
     });

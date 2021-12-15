@@ -1,6 +1,6 @@
 {
   "name": "lycabinet",
-  "version": "0.5.2",
+  "version": "0.5.6",
   "description": "A simple small JSON Object storage helper with good performance.",
   "main": "dist/lycabinet.min.js",
   "scripts": {

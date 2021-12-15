@@ -40,7 +40,7 @@ export function addCheck(Lycabinet){
 
   /**
    * Listening the storage event from other tabs(pages)
-   * by
+   *  Custom Events: `storageSync`
    */
   var localContext: {cabinetIns?: Record<string, unknown>} = {};
   addStoreListener( (eve)=>{
@@ -51,14 +51,21 @@ export function addCheck(Lycabinet){
 
     const { cabinetIns: cabinetIns } = localContext;
     
-    // Do not reload if current cabinet has shared cabinet.
+    // Do not do redundant reload if current cabinet is shared by another.
+    // We think that in one page the cabinet has the same root is always shared, but there are troubles if
+    //  the first instance is collected by GC.
     if(cabinetIns.useLoadCache) return true;
 
     // Reload. By default using deeepMerge mode.
     if([cabinetIns.__root, ParticalToken].indexOf(eve.key) > -1){
       DEBUG && console.log("[Lycabinet]: Synchronizing data from other tabs...");
       // merge data using default options.
-      (cabinetIns.load as Function)(true, false, true); // Considering of the latency on cloud, we only synchronize the data on local.
+      (cabinetIns.load as Function)({
+        onCloud: false, 
+        concurrent: true, 
+        deepMerge: true
+      }); // Considering of the latency on cloud, we only synchronize the data locally.
+      (cabinetIns._trigger as Function)("storageSync");
     }
   });
 
@@ -74,7 +81,7 @@ export function addCheck(Lycabinet){
 
     // add options for custom database which is not localStorage.
     objectSupplement(cabinetIns.options, {
-      autoNotifyTabs: false,
+      autoNotifyTabs: cabinetIns.options.localInterface.database===window.sessionStorage,
     });
 
     cabinetIns._on("saved", function(onCloud, concurrent){

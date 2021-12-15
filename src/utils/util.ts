@@ -244,6 +244,8 @@ export function storageAvailable(type) {
   }
 }
 
+export const LogToken = "[Lycabinet]: ";
+
 export const DEBUG = process.env.NODE_ENV !== 'production';
 
 export const EnvAssociate = {

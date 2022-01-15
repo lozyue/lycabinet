@@ -1,18 +1,14 @@
 const path = require("path");
-// import { baseConfig } from './base.config.js'
 const {baseConfig, deepAssign} = require("./base.config.js");
 
-// npm install -D webpack-merge
-// const WebpackMerge = require('webpack-merge');
 
 var devConfig = {
   mode: 'development',
-
   devtool: 'cheap-module-source-map',
 
   entry: {
     lycabinet: "./src/index",
-    // "lycabinet.light": './src/light.js',
+    "lycabinet.light": './src/light',
   },
 
   output: {
@@ -26,9 +22,6 @@ var devConfig = {
       umdNamedDefine: true,
       export: 'default',
     }, 
-    // Or the webpack will wrap a ['default'] over the target and can see in window when load by script tag. 
-    // see: https://segmentfault.com/a/1190000013632880
-    // targetExport: 'default', 
     environment: {
       arrowFunction: true,
     }
@@ -95,13 +88,9 @@ var devConfig = {
   },
 
   plugins: [
-    // new webpack.DefinePlugin({
-    //     LYCABINET_VERSION: `"${require('../package.json').version}"`,
-    //     GIT_HASH: JSON.stringify(gitRevisionPlugin.version()),
-    // }),
   ],
 };
 
 devConfig = deepAssign(baseConfig, devConfig);
-// devConfig = WebpackMerge(baseConfig, devConfig); // merge by the function provided with webpack.
+
 module.exports = devConfig;

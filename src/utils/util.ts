@@ -10,7 +10,7 @@
 export const arrayIndex = function (arr, index) {
   index = (arr.length + index) % arr.length;
   if (arr[index] === undefined) {
-    throw new Error(`The index ${index} in array ${arr.toString()} is overflowed!`);
+    console.error(`The index ${index} in array ${arr.toString()} is overflowed!`);
   }
   return arr[index];
 }

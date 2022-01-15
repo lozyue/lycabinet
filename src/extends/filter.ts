@@ -4,9 +4,10 @@
  * (Via to JSON hook)
  * @param {*} Lycabinet 
  */
-import { DEBUG, deepSupplement, is_Defined } from '../utils/util';
+import { DEBUG, deepClone, deepSupplement, is_Defined } from '../utils/util';
 
 export function addFilter(Lycabinet){
+  const Proto = Lycabinet.prototype;
   /**
    * Set a filter by options
    * Support dot `.` selection expression
@@ -14,63 +15,86 @@ export function addFilter(Lycabinet){
    */
   Lycabinet.mixin(function(cabinetIns){
     const opt = cabinetIns.options;
-    if(opt.includes && opt.excludes)
-      this.setFilter(); // auto set.
-    else{
-      deepSupplement(opt, {
-        includes: [], // vacant equals to all!
-        excludes: [], // vacant equals to none.
+    if(opt.includes || opt.excludes){
+      cabinetIns._once("mounted", ()=>{
+        cabinetIns.setFilter(); // auto set.
       });
     }
+    deepSupplement(opt, {
+      includes: [], // vacant equals to all!
+      excludes: [], // vacant equals to none.
+    });
   });
 
-  Lycabinet.prototype.setFilter = function (){
+  Proto.setFilter = function(){
     const _this = this;
-    Object.defineProperty(this.getStore(), 'toJSON', {
+
+    Object.defineProperty(this.getCabinet(), 'toJSON', {
       configurable: true,
       enumerable: false, // hide in enumeration.
       value: function(){
-        let filtered = Object.create(null);
+        const cabinet = _this.getCabinet();
         // set the basement includes.
-        if(_this.options.includes.length>0){
-          let includesKeyMap: number[]= [];
-          _this.options.includes.forEach( (associatedKey,index)=>{
-            let current = includesKeyMap[index] = associatedKey.split(".");
-            let currentStorage = _this.__storage;
-            current.forEach((item, i )=>{
-              currentStorage = currentStorage[current[i]];
-              // Compliment the non-final selection. 
-              if( i +1 < current.length && is_Defined( currentStorage )){
-                if(!is_Defined(filtered[current[ i ]]) )
-                  filtered[current[i]] = {};
-                else
-                  Object.assign(filtered[current[i]], currentStorage);
-              }else
-                filtered[current[i]] = currentStorage;
-            });
-          });
-        // if the configuration of `includes` option is not designed, it will mean exactly includes all by default. 
-        }else Object.assign(filtered, _this.__storage);
-        // caculating the exclude filtering.
-        let excludesKeyMap: Array<number>= [];
-        _this.options.excludes.forEach( (associatedKey, index, arr)=>{
-          let current = excludesKeyMap[index] = associatedKey.split(".");
-          let currentStorage = filtered;
-          // instead of forEach for better logical control.
-          for(let i=0; i<current.length; i++){
-            if(!is_Defined(filtered[current[0]]) ) break;
-
-            if(is_Defined(currentStorage[current[i]]) )
-              currentStorage = currentStorage[current[i]];
-            else
-              break ;
-            // find the target.
-            if(i === arr.length-1)
-              currentStorage = void 0;
-          };
-        });
-        return filtered;
+        const Includes = _this.options.includes;
+        const Excludes = _this.options.excludes;
+        return CustomFilter(cabinet, Includes, Excludes);
       },
     });
-  }
+  };
+
+  /**
+   * Allow you appointed the specific Storage Object and 
+   *  temporary Includes/Excludes options.
+   */
+  Lycabinet.$filter = CustomFilter;
+}
+
+/**
+ * Helper Function.
+ */
+function CustomFilter(cabinet, Includes, Excludes){
+  let filtered = Object.create(null);
+  if(Includes.length>0){
+    let includesKeyMap: number[]= [];
+    Includes.forEach( (associatedKey,index)=>{
+      let current = includesKeyMap[index] = associatedKey.split(".");
+      let currentStore = cabinet;
+      let targetStore = filtered;
+      current.forEach((item, i )=>{
+        currentStore = currentStore[item];
+        // Compliment the non-final selection. 
+        if( i +1 < current.length && is_Defined( currentStore )){
+          if(!is_Defined(targetStore[item]) )
+            targetStore[item] = {};
+          // else
+          //   targetStore[item] = currentStore;
+        }else
+          targetStore[item] = currentStore;
+        targetStore = targetStore[item];
+      });
+
+    });
+  // if the configuration of `includes` option is not designed, it will mean exactly includes all by default. 
+  }else Object.assign(filtered, cabinet);
+  // caculating the exclude filtering.
+  let excludesKeyMap: Array<number>= [];
+  let currentStore = deepClone(filtered);
+  Excludes.forEach( (associatedKey, index, arr)=>{
+    let current = excludesKeyMap[index] = associatedKey.split(".");
+    let pointer = currentStore;
+    for(let i=0; i<current.length; i++){
+      console.log({pointer, current: current[i]});
+      if(is_Defined(pointer[current[i]]) ){
+        // find the target.
+        if(i === current.length-1){
+          pointer[current[i]] = void 0;
+        }
+        // continue
+        pointer = pointer[current[i]];
+      }else
+        break ;
+    };
+  });
+  filtered = currentStore;
+  return filtered;
 }

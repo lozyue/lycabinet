@@ -20,7 +20,8 @@ let onSetted: Function| null = null;
  */
 
 export function addObserver(Lycabinet){
-  Lycabinet.prototype.initObserver = function(options: any = {}){
+  const Proto = Lycabinet.prototype;
+  Proto.initObserver = function(options: any = {}){
     // Override the default options
     Object.assign(options, {
       deepMerge: true,
@@ -46,7 +47,7 @@ export function addObserver(Lycabinet){
   };
 
   // Convert the path target to be reactive. Check redundant Prevent by default.
-  Lycabinet.$set = function(target, pathList: string[], deep=false, shallow =true){
+  Lycabinet.$set = function(target: Object, pathList: string[], deep=false, shallow =true){
 
     // CurveSet the target value.
     return curveSet(target, pathList, (innerTarget, kname)=>{
@@ -61,7 +62,7 @@ export function addObserver(Lycabinet){
     });
   };
 
-  Lycabinet.$get = function(target, pathList: string[]){
+  Lycabinet.$get = function(target: Object, pathList: string[]){
     return curveGet(target, pathList);
   }
 
@@ -72,11 +73,11 @@ export function addObserver(Lycabinet){
    * Warning: If the value in path end is assigned with non-PlainObject type value previously,
    *  the value will be override by `{}`
    */ 
-  Lycabinet.prototype.$set = function(pathName: string, deep=false, shallow =true){
+  Proto.$set = function(pathName: string, deep=false, shallow =true){
     return Lycabinet.$set(this.__storage, pathName.split('.'), deep, shallow);
   }
   // Makes the target to be reactive
-  Lycabinet.prototype.$get = function(pathName: string){
+  Proto.$get = function(pathName: string){
     return curveGet(this.__storage, pathName.split('.') );
   }
 };

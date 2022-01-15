@@ -1,31 +1,19 @@
 /**
  * lycabinet.js
- * A high performance JSON Object storage helper.
- * 高性能的 JSON对象 小型数据存储辅助类
+ * A slight JSON Type Object storage helper with good performance.
+ * 一个适用于JSON对象数据存储的轻量辅助类。
+ * @author Lozyue
  * @createdTime 2021-03-28
  */
 
+import { ConstructOptions, AccessOptions } from '@/typings/lycabinet';
 import * as _STATUS from '@/utils/status';
-import { LogToken } from '@/utils/util';
-import { deepAssign, arbitraryFree, is_Defined, is_PlainObject, DEBUG, is_Empty, is_String } from '@/utils/util';
+import { 
+  deepAssign, arbitraryFree, 
+  is_Defined, is_PlainObject, is_Empty, is_String,
+  LogToken, DEBUG, 
+} from '@/utils/util';
 
-type AccessOptions = Partial<{
-  onCloud: boolean|null, 
-  concurrent: boolean|null,
-  deepMerge: boolean|null,
-  onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
-}>
-
-/**
- * Init core.
- * @param {*} root 
- * @param {Object} options => {
- *   initStorage => Object, // 初始化值
- *   outerSave => Function, // 自定义保存方法，接收一个参数，为存储的数据对象
- *   outerLoad => Function, // 自定义装载方法，返回一个对象，将Assign给数据存储对象
- * }
- * 注意：以上网络请求的外部通信方法需要返回一个Promise对象.
- */
 export function InitCore(Lycabinet){
   // Constructor Options
   Lycabinet.DEBUG = true;
@@ -37,7 +25,7 @@ export function InitCore(Lycabinet){
    * @param { String } root 
    * @param { Object } options 
    */
-  Proto.__init = function(root: string, options: Record<string, unknown> = {} ){
+  Proto.__init = function(root: string, options: Partial<ConstructOptions> = {} ){
 
     if(options.initStorage && !is_PlainObject(options.initStorage) ){
       throw new Error(`${LogToken}The type of the provided option "initStorage" must be an Object!`);
@@ -48,28 +36,24 @@ export function InitCore(Lycabinet){
 
     // default options.
     const defaultOptions = {
-      root: this.__root, // copy to options.
-      autoload: true, // 实例化后 自动调用._init 方法实例化. (并且此时init中会自动调用 load 方法. 默认使用 Object.assign 浅合并，可手动调用传参深度合并.)
+      root: this.__root,
+      autoload: true,
       lazyPeriod : ~~(options.lazyPeriod as number) || 5000, // set the lazy period of lazySave methods.
-      saveMutex: true, // 存储互斥 仅在 idle 状态可进行保存操作
+      saveMutex: true,
       autoLazy: true, // Call lazy save automaticly when the save is busy. 
       logEvent: false, // use this to log event globally from scratch
       useSharedCabinet: true, // use global shared cabinet
       shareCabinet: true, // share the cabinet for global
-      // Weather use deepAssign to contact when load the outer data.
-      // (If the observer is required, it is recommend you to always keep this on to prevent reference loss.)
+      // Weather use deepAssign to contact when load from outer data.
       deepMerge: false, 
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
-        getItem: "getItem", // method name, String
-        setItem: "setItem", // method name, String
-        removeItem: "removeItem", // method name, String
+        getItem: "getItem",
+        setItem: "setItem",
+        removeItem: "removeItem",
       }, 
-      
-      // Decide weather enable local cabinet when cloud is setted. Auto judge.
       concurrent: !!(options.outerLoad || options.outerSave || options.outerClear),
-      // cloud loads example options. The inner pointer `this` is pointed to `cabinet.options` if not set by arrow function.
       outerLoad: null,
       outerSave: null,
       outerClear: null,
@@ -81,7 +65,7 @@ export function InitCore(Lycabinet){
     // root event console log
     if(defaultOptions.logEvent) this._setlog();
 
-    this.status = _STATUS.CREATED; // status token
+    this.status = _STATUS.CREATED;
     this._trigger("created");
     
     if(defaultOptions.autoload) this._init(options.initStorage || Object.create(null) );
@@ -92,7 +76,8 @@ export function InitCore(Lycabinet){
    * If autoload is not setted, you should call this manually.
    * Todo: add reduplicate._init check and warning.
    */
-  Proto._init = function(cabinet = Object.create(null)){
+  Proto._init = function(cabinet = null){
+    cabinet = cabinet || this.options.initStorage || Object.create(null);
     // write protection backflow
     const writeBackflow = function(){
       if(is_Empty(this.__tempStorage)) return;
@@ -126,7 +111,9 @@ export function InitCore(Lycabinet){
     if(!isLoadFromCache){
       // Auto load. Only when the cabinet in using is private.
       if(this.options.autoload) this.load(); // default using shallow assign.
-      else this.status = _STATUS.IDLE; // Amend the status error.
+      else this.status = _STATUS.IDLE; // Amend the status.
+    } else {
+      this.status = _STATUS.IDLE; // Amend the status.
     }
     return this;
   }
@@ -173,7 +160,7 @@ export function InitCore(Lycabinet){
   /**
    * Delete an item by key.
    */ 
-  Proto.remove = function(keys){
+  Proto.remove = function(keys: string[]){
     let removed = false;
     arbitraryFree(keys, (k)=>{
       // Though it isn't disappeared immediately, But after JSON parse and stringify manipulations this will be cleared.
@@ -192,7 +179,7 @@ export function InitCore(Lycabinet){
    * @param {Boolean} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
-  Proto.clear = function(option: AccessOptions = {}){
+  Proto.clear = function(option: AccessOptions & { reset?: boolean } = {}){
     // merge default options.
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerClear) as boolean;
@@ -214,33 +201,40 @@ export function InitCore(Lycabinet){
       this._trigger('localCleared', this.__root); // Give the param of the remove target. 
     }
 
+    const toEnd = (isSuccess: boolean)=>{
+      this.status = _STATUS.IDLE;
+      this._trigger('cleared', onCloud, concurrent);
+      // Callback
+      option.onceDone && option.onceDone(isSuccess, onCloud);
+    };
+
     // Cloud clear
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
-      this.status = _STATUS.IDLE;
-      this._trigger('cleared', onCloud, concurrent);
-      // Callback
-      option.onceDone && option.onceDone(true, onCloud);
+      toEnd(true);
     }
     const onError = (msg, reason='cloudClearings')=>{
-      this._trigger("error", "clear", reason);
-      this.status = _STATUS.IDLE;
-      this._trigger('cleared', onCloud, concurrent);
-      onCloud && console.error(`${LogToken}Failed to Clear the cabinet "${this.__root}" on cloud. ${msg}`);
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
+      toEnd(false);
+
+      if(this._trigger("error", "clear", reason) !== true ){
+        onCloud && console.error(`${LogToken}Failed tfo Clear the cabinet "${this.__root}" on cloud. ${msg}`);
+      }
     }
 
     // handle this async or asyn easily.
     try{
+      // Reset the inner cabinet to vacant Object.
+      if(option.reset){
+        Reflect.ownKeys(this.__storage).forEach(item=>{
+          delete this.__storage[item];
+        });
+      }
+
       localClear();
       if(onCloud) 
         this.options.outerClear(pack, onSuccess, onError);
       else {
-        this.status = _STATUS.IDLE;
-        this._trigger('cleared', onCloud, concurrent);
-        // Callback
-        option.onceDone && option.onceDone(true, onCloud);
+        toEnd(true);
       }
     } catch(e){
       onError(e, "unknown");
@@ -276,7 +270,8 @@ export function InitCore(Lycabinet){
       const localApi = this.options.localInterface;
       
       let initialData = localApi.database[localApi.getItem]( this.__root );
-      // trigger hook event after call local database to parse the value. Should have a return value in event. (data)=>{ return handle(data); }
+      // trigger hook event after call local database to parse the value. 
+      // Should have a return value in event. (data)=>{ return handle(data); }
       initialData = this._trigger('localLoaded', initialData); // Only take effect on the last element.
 
       localTemp = JSON.parse( initialData );
@@ -285,6 +280,13 @@ export function InitCore(Lycabinet){
       else
         Object.assign(this.__storage, localTemp);
     };
+
+    const toEnd = (isSuccess: boolean)=>{
+      this.status = _STATUS.IDLE;
+      this._trigger('loaded', onCloud, concurrent);
+      // Callback
+      option.onceDone && option.onceDone(isSuccess, onCloud);
+    }
 
     // Cloud load
     const pack = [this.__root, this.__storage];
@@ -297,18 +299,15 @@ export function InitCore(Lycabinet){
       else 
       // shallow assign makes cloud weight heavier.
         Object.assign(this.__storage, data);
-      this.status = _STATUS.IDLE;
-      this._trigger('loaded', onCloud, concurrent);
-      // Callback
-      option.onceDone && option.onceDone(true, onCloud);
+      
+      toEnd(true);
     }
     const onError = (msg, reason='cloudLoadings')=>{
-      this._trigger("error", "load", reason);
-      this.status = _STATUS.IDLE;
-      this._trigger('loaded', onCloud, concurrent);
-      onCloud && console.error(`${LogToken}Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
+      toEnd(false);
+
+      if(this._trigger("error", "load", reason) !== true){
+        onCloud && console.error(`${LogToken}Failed to Load the cabinet "${this.__root}" on cloud. ${msg}`);
+      }
     }
 
     // handle this async or asyn easily.
@@ -317,10 +316,7 @@ export function InitCore(Lycabinet){
       if(onCloud) 
         this.options.outerLoad(pack, onSuccess, onError);
       else {
-        this.status = _STATUS.IDLE;
-        this._trigger('loaded', onCloud, concurrent);
-        // Callback
-        option.onceDone && option.onceDone(true, onCloud);
+        toEnd(true);
       }
     } catch(e){
       onError(e, "unknown");
@@ -369,22 +365,24 @@ export function InitCore(Lycabinet){
       localApi.database[localApi.setItem](this.__root, finalData);
     };
     
+    const toEnd = (isSuccess: boolean)=>{
+      this.status = _STATUS.IDLE;
+      this._trigger('saved', onCloud, concurrent);
+      // Callback
+      option.onceDone && option.onceDone(isSuccess, onCloud);
+    }
 
     // Cloud save
     const pack = [this.__root, this.__storage];
     const onSuccess = ()=>{
-      this.status = _STATUS.IDLE;
-      this._trigger('saved', onCloud, concurrent);
-      // Callback
-      option.onceDone && option.onceDone(true, onCloud);
+      toEnd(true);
     }
     const onError = (msg, reason="cloudSavings")=>{
-      this._trigger("error", "save", reason);
-      this.status = _STATUS.IDLE;
-      this._trigger('saved', onCloud, concurrent);
-      onCloud && console.error(`${LogToken}Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
-      // Callback
-      option.onceDone && option.onceDone(false, onCloud);
+      toEnd(false);
+
+      if(this._trigger("error", "save", reason) !== true){
+        onCloud && console.error(`${LogToken}Failed to Save the cabinet "${this.__root}" on cloud. ${msg}`);
+      }
     }
 
     // handle this async or asyn easily.
@@ -393,10 +391,7 @@ export function InitCore(Lycabinet){
       if(onCloud) 
         this.options.outerSave(pack, onSuccess, onError);
       else {
-        this.status = _STATUS.IDLE;
-        this._trigger('saved', onCloud, concurrent);
-        // Callback
-        option.onceDone && option.onceDone(true, onCloud);
+        toEnd(true);
       }
     } catch(e){
       onError(e, 'unknown');
@@ -407,37 +402,48 @@ export function InitCore(Lycabinet){
   /**
    * Map methods support.
    * Iterate the first hierarchy with callback.
-   * @param {Function: (item, index)=>any }} callback with two params
+   * @param {Function: (item, key, cabinet)=>any }} callback with two params
    */
-  Proto.forEach = function(callback){
-    let item, index = 0;
+  Proto.forEach = function(callback: (item: any, key: string, cabinet: Object)=>any){
+    let item;
     const cabinet = this.__storage;
     for(let key in cabinet){
       item = cabinet[key];
-      callback(item, index++, cabinet); // only two params.
+      callback(item, key, cabinet); // only two params.
     }
+    return this;
   }
 
   /**
    * Foreach methods support.
    * Iterate the first hierarchy with callback.
-   * @param {Function: (item, index)=>any }} callback  with two params
+   * @param {Function: (item, key, cabinet)=>any }} callback  with two params
    */
-  Proto.map = function(callback){
+  Proto.map = function(callback: (item: any, key: string, cabinet: Object)=>any){
     let item;
     const cabinet = this.__storage;
     for(let key in cabinet){
       item = cabinet[key];
       cabinet[key] = callback(item, key, cabinet); // only two params.
     }
+    return this;
   }
 
   /**
    * For custom destroy.
    * Call it to clear the sideEffect produce by kinds of plugins.
    */
-  Proto.destroy = function(){
+  Proto.destroy = function(autoClear = true){
     this._trigger("destroied");
+    
+    if(autoClear){
+      this.clear({
+        reset: true,
+        onCloud: false, 
+        concurrent: false,
+      });
+      this.removeStore();
+    }
   }
 
 }

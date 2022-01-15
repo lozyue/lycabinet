@@ -1,5 +1,5 @@
 /**
- * Status for Mutex
+ * Lycabinet Status.
  */
 
 const CREATED = 'created';

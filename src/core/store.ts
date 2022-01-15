@@ -1,38 +1,60 @@
 /**
- * Given a private variable for every set storage.
- * Basement.
+ * Given a private cabinet for every set storage.
+ * Cabinet Basement.
  */
 
 import { DEBUG, is_Defined, is_PlainObject } from "../utils/util";
 
 export function InitStore(Lycabinet){
   const __cabinet = Object.create(null);
+  DEBUG && (window["__cabinet"] = __cabinet);
+  const Proto = Lycabinet.prototype;
 
-  Lycabinet.prototype.hasStore = function(){
+  /**
+   * Get the exact cabinet of current instance.
+   */
+  Proto.getCabinet = function(){
+    return this.__storage;
+  }
+
+  /**
+   * Conclude whether the current cabinet is consistent with the inner cache.
+   * @returns { Boolean }
+   */
+  Proto.isIdentical = function(){
+    return this.__storage === __cabinet[this.__root];
+  }
+
+  Proto.hasStore = function(){
     return is_Defined(__cabinet[this.__root]) && is_PlainObject(__cabinet[this.__root]);
   }
 
   /**
-   * Get the cabinet access.
-   * @returns {Plain Object} __cabinet ; The reference of the storage Object property.
+   * Get the cached cabinet access.
+   * @returns {Plain Object} __cabinet ; The reference of the storage Object property been cached.
    * Each instance is shared by the root key.
    */
-  Lycabinet.prototype.getStore = function(){
+  Proto.getStore = function(){
     return __cabinet[this.__root];
   }
   
   /**
-   * To initialize the __cabinet storage. 
+   * To initialize the cabinet cache. 
    * @param {Plain Object} cabinet 
    */
-  Lycabinet.prototype.setStore = function(cabinet){
+  Proto.setStore = function(cabinet){
     __cabinet[this.__root] = cabinet;
   }
 
   /**
    * To clear the inner cache of cabinet.
+   * Defaultly prevent sharing elimination.
    */
-  Lycabinet.prototype.removeStore = function(){
+  Proto.removeStore = function(){
+    if(this.options.useSharedCabinet 
+      || !this.options.shareCabinet 
+      || !this.isIdentical()
+    ) return false;
     __cabinet[this.__root] = void 0;
   }
 

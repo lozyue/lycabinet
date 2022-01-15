@@ -1,11 +1,11 @@
 const path = require('path');
+const webpack = require('webpack');
+
 const {baseConfig, deepAssign} = require("./base.config.js");
 
 var prodConfig = {
   mode: 'production',
-
   bail: true,
-
   devtool: 'source-map', // source map
 
   entry: {
@@ -73,10 +73,13 @@ var prodConfig = {
     ],
   },
 
+  plugins:[
+    new webpack.DefinePlugin({
+        LYCABINET_VERSION: `"${require('../package.json').version}"`,
+        // GIT_HASH: JSON.stringify(gitRevisionPlugin.version()),
+    }),
+  ]
 };
 
-
 prodConfig = deepAssign(baseConfig, prodConfig);
-// prodConfig = WebpackMerge(baseConfig, prodConfig); // merge by the function provided with webpack.
 module.exports = prodConfig;
-

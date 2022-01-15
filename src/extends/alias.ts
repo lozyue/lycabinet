@@ -10,7 +10,7 @@ export function initAlias(Lycabinet){
 
   Proto.read = Proto.get;
 
-  Proto.storage = Proto.getStore;
+  Proto.storage = Proto.getCabinet;
 
-  Proto.getCabinet = Proto.getStore;
+  Proto.isConsistent = Proto.isIdentical;
 }

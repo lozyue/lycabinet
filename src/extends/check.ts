@@ -97,8 +97,8 @@ export function addCheck(Lycabinet){
   });
 
   /**
-   * If the database in configuration is not `LocalStorage` (like Env is `sessionStorage`)
-   * You should call this method to notify the other pages or set autoNotifyTabs to true.
+   * If the database in configuration is not `LocalStorage` (eg Env `sessionStorage`)
+   * You should call this method to notify the other pages or set prop `autoNotifyTabs` to true.
    */
   Lycabinet.prototype.notifyTabs = function(){
     const randomToken = new Date().getTime();

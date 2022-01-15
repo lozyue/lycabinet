@@ -1,5 +1,5 @@
 /**
- * Lycabinet.js
+ * Lycabinet JS
  * Full build.
  */
 

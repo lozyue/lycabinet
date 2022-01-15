@@ -1,7 +1,7 @@
 /**
  * The Laction JS(lactionQueue JS) entry file.
- * Light version.
- * Only includes the core build.
+ * Slight version.
+ * Only includes the core build (No event system).
  * For smaller build bundle.
  */
 

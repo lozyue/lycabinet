@@ -1,8 +1,7 @@
 {
   "name": "lycabinet",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "description": "A simple small JSON Object storage helper with good performance.",
-  "main": "dist/lycabinet.min.js",
   "scripts": {
     "start": "npm run dev",
     "build": "cross-env NODE_ENV=production webpack --config webpack/prod.config.js --progress",
@@ -10,23 +9,24 @@
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs"
   },
+  "main": "dist/lycabinet.min.js",
+  "types": "typings/lycabinet.d.ts",
   "files": [
-    "dist"
+    "dist/**/*",
+    "src/**/*"
   ],
   "repository": {
     "url": "git+https://github.com/lozyue/lycabinet.git",
     "type": "git"
   },
   "keywords": [
-    "storage",
-    "JavaScript",
-    "web",
-    "highPerformance"
+    "Storage",
+    "JSON",
+    "slight",
+    "prolongable",
+    "goodPerformance"
   ],
-  "gitHooks": {
-    "pre-commit": "npm run format:staged"
-  },
-  "author": "Loyue",
+  "author": "Lozyue <lozyue@foxmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/lozyue/lycabinet/issues"
@@ -46,5 +46,14 @@
     "webpack-cli": "^4.7.2",
     "webpack-dev-server": "^3.11.2"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "bundlesize": [
+    {
+      "path": "./dist/lycabinet.min.js",
+      "threshold": "13kB"
+    },{
+      "path": "./dist/lycabinet.light.min.js",
+      "threshold": "7kB"
+    }
+  ]
 }

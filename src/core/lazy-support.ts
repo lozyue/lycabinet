@@ -1,9 +1,9 @@
-import { DEBUG } from "@/utils/util";
-
 /**
  * Lazy methods support.
  * @param {*} Lycabinet 
  */
+import { DEBUG } from "@/utils/util";
+
 export function InitLazyDepartment(Lycabinet){
   
   /**

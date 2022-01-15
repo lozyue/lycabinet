@@ -1,21 +1,37 @@
 # Lycabinet
 
-A simple small JSON Object storage helper with good performance.
+A slight JSON Type Object storage helper with good performance.
 
-一个性能还不错的 小型JSON对象数据存储辅助类.
+一个性能还不错的轻量级JSON对象数据存储辅助类.
 
 
 ## Description
 
-一个性能还不错的 小型JSON对象数据存储辅助类.
+一个性能还不错的轻量级JSON对象数据存储辅助类.
 
 支持存储 JSON 原生支持的基本数据类型
 
 提供 lazy 系列方法, 可以用于频繁修改场景以提高性能.
 
 目前支持 包括本地存储 LocalStorage / SessionStorage 和自定义外部 API 存储以及两种并行的存储模式.
+Storage能够在有多个页面的时候自动同步修改更新数据。
 
-甚至有轻微的状态管理功能。能够在有多个页面的时候自动同步修改更新数据。
+甚至有简单的状态管理功能。
+
+
+## Installing
+
+Using npm:
+
+```bash
+$ npm install lycabinet
+```
+
+Using jsDelivr cdn:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/lycabinet/dist/lycabinet.min.js"></script>
+```
 
 
 ## Usage
@@ -27,11 +43,11 @@ A simple small JSON Object storage helper with good performance.
 很容易就能初始化一个存储对象：
 ```js
 // 不带配置项的初始化
-var cabinet=new lzycabinet("rootKey");
+var cabinetIns=new Lycabinet("rootKey");
 
-// 第二个参数可以进行配置，当前展示是部分默认配置
-var cabinet=new lzycabinet("rootKey",{
-  autoload: true, // 自动装载
+// 第二个参数可以进行配置
+var cabinetIns=new Lycabinet("rootKey",{
+  autoload: true, // 自动装载，同默认配置
   initStorage: { // 初始数据对象，必须为PlainObject
     name: "zs",
     info: {
@@ -50,11 +66,17 @@ rootKey 用于指定存储对象类型的标识键值。
 比如 Lycabinet 默认使用 LocalStorage 进行本地存储，那么这个 rootKey=`cabinet` 就会作为LocalStorage一个数据项的键名。
 当然你也也可以指定 存储对象 为 SessionStorage ，甚至可以额外配置一个外部数据支持。
 
+`autoload`选项相当于默认执行了两个方法:
+```js
+cabinetIns
+```
+
+
 #### Load / Clear
 
-使用 load 方法初始化载入数据
+使用 load 方法初始化载入数据，如果关闭autoload选项，就需要
 ```js
-cabinet.load();
+cabinetIns.load();
 ```
 内置存储库默认基于 localStorage ,调用 load 后将载入数据。
 
@@ -64,7 +86,6 @@ cabinet.load();
 
 详见: [外部存储XHR通信配置](#外部存储xhr通信配置)
 
-清除数据使用`clear`方法，清除本地/外部存储，使用方式类似`load`方法。
 
 选项：
 ```ts
@@ -82,14 +103,24 @@ type AccessOptions = Partial<{
 上述选项中 `onCloud`, `concurrent`, `deepMerge` 即便在实例化时未指定也均有一个会自动根据已知选项生成的默认值，
 如果在调用`load`,`save`,`clear`方法时不指定其中的选项则默认使用相应默认实例选项值。
 
-对的，`save`类方法的选项也同`load`,`clear` 一样，所以以下就不再赘述了。
+清除数据使用`clear`方法，清除本地/外部存储，使用方式类似`load`方法。
+
+但`clear`方法仅清除存储的数据（本地存储和外部存储），默认配置同步实例配置。
+而如果要将内部cabinet对象数据也“清空“可以在调用`clear`时添加 "reset" 选项为true
+```js
+// Eliminate the value added by `set`.
+cabinetIns.clear({
+  reset: true, // reset inner cabinet to vacant Object
+});
+```
 
 #### Read/Write Data
+
 
 通过属性名读取数据使用 `get` 方法, 支持别名 `read`
 ```js
 // 提供存储数据的 key 
-cabinet.get("info");
+cabinetIns.get("info");
 // 返回 => 
 // Object { age: 3, weight: 45, email: "zs@gmail.com" }
 ```
@@ -97,14 +128,14 @@ cabinet.get("info");
 写数据使用 `set` 方法或者 `lazySet` 方法来指定属性来设定一个数据，
 后者和前者的区别是是否自动懒保存。
 
-也即 `lazySet(,,)` 相当于 `cabinet.set(...).lazySave(...)`
+也即 `lazySet(,,)` 相当于 `cabinetIns.set(...).lazySave(...)`
 
 注意：使用set方法进行数据写入并不会自动保存
 ```js
 // 使用 key, value 的方式来存储数据
-cabinet.set("name", "张三");
+cabinetIns.set("name", "张三");
 // 支持存储各种标准JSON支持的数据类型(标准外数据类型不保证在存储后可恢复)
-cabinet.set("info",{
+cabinetIns.set("info",{
   age: 5,
   weight: 30,
   email: "zs@gmail.com",
@@ -118,25 +149,33 @@ cabinet.set("info",{
 注意：该方法由 Oberser.js 插件提供。
 
 ```js
-cabinet.$get("info.age");
+cabinetIns.$get("info.age");
 // 返回 =>
 // 30
 ```
 
 #### Save Data
 
+是的，`save`类方法的选项也同`load`,`clear` 一样，所以以下就不再赘述了。
+
 调用 `save` 或 `lazySave` 来存储已设定的数据到本地或者云端或两者都有。
 
-`lazySave`方法保存时自带节流防抖，适合高频率场景。
+对于lazy类方法`lazySave`方法选项也同save. 保存时自带节流防抖，适合高频率场景。
 
 ```js
 // 直接调用
-cabinet.save();
+cabinetIns.save();
 // 指定选项
-cabinet.
+cabinetIns.save({
+  onCloud: true, // 保存到云端
+  concurrent: false, // 不重复到本地存储
+  onceDone(){
+    console.log("保存到云端成功！")
+  }
+});
 ```
 
-默认内置存储是 localStorage ,也同时支持外部存储
+默认本地存储是 localStorage , 同时支持外部存储, 可自定义API回调
 配置外部存储详见: [外部存储XHR通信配置](#外部存储xhr通信配置)
 
 
@@ -155,8 +194,8 @@ cabinet.
 | initStorage | 初始化的数据对象引用(之后的`load,set,save,clear`等方法均其上进行)      | Object  | {}      |
 | autoload    | 初始化时是否自动调用加载方法, 如果设为 false 禁用后, 需要手动调用实例的_init和load方法 | Boolean | true    |
 | saveMutex   | 是否启用保存动作状态互斥                                             | Boolean | true    |
-| lazyPeriod | 懒保存节流周期。单位: ms,影响`lazySave`和`lazySet`方法的节流。挂载`LactionJS`替换为Laction instance的周期 | Integer | 5000 |
-| concurrence | 是否允许本地和外部存储并行，设置为false时且未设定外部存储将不会进行本地存储    | Boolean | true    |
+| lazyPeriod | 懒保存节流周期。单位: ms,影响`lazySave`和`lazySet`方法的节流。挂载`LactionJS`后会被替换为Laction instance的周期 | Integer | 5000 |
+| concurrent | 是否允许本地和外部存储并行，设置为false时且未设定外部存储将不会进行本地存储    | Boolean | true    |
 | outerLoad   | 外部存储加载方法配置,详见[外部存储XHR通信配置](#外部存储xhr通信配置) | Object  | null    |
 | outerSave   | 外部存储保存方法配置,详见[外部存储XHR通信配置](#外部存储xhr通信配置) | Object  | null    |
 | outerClear  | 外部存储清除方法配置,详见[外部存储XHR通信配置](#外部存储xhr通信配置) | Object  | null    |
@@ -170,7 +209,7 @@ cabinet.
 ```js
 new Lycabinet(PublicConsistentCabinetName, {
   deepMerge: true, // For interior Object-type prop reference keep.
-  concurrence: true, // always set storage both cloud and local.
+  concurrent: true, // always set storage both cloud and local.
   oncloud: true, // same to default
   autoload: false, // should manually load before using.
   useSharedCabinet: false, // Won't be dirtied
@@ -179,17 +218,17 @@ new Lycabinet(PublicConsistentCabinetName, {
   // Filter Options
   exclude: ["server.cloudSync"],
   // Outer Storage options
-  ...getCloudSettings(),
+  ...getCloudConfig(),
 });
 
-function getCloudSettings(){
+function getCloudConfig(){
   return {
     outerLoad: function([rootName, cabinet], success, failed){
       // Fake ajax. fetch some data by rootName.
       ajax.post(`system/storage/get`,{
         key: rootName,
       }).then(( { data: resp} )=>{
-        // If the request is success.
+        // If the request is successed.
         if(resp.msg==='ok')
           success( resp.data ); // Call the `success` callback given with fetched data.
       }).catch((e)=>{
@@ -201,7 +240,7 @@ function getCloudSettings(){
       ajax.post(`system/storage/save`,{
         key: rootName,
       }).then(( { data: resp} )=>{
-        // If the request is success.
+        // If the request is successed.
         if(resp.msg==='ok')
           success(); // Callback. No need to given the data.
       }).catch((e)=>{
@@ -213,7 +252,7 @@ function getCloudSettings(){
       ajax.post(`system/storage/del`,{
         key: rootName,
       }).then(( { data: resp} )=>{
-        // If the request is success.
+        // If the request is successed.
         if(resp.msg==='ok')
           success( resp.data ); // Callback. No need to given the data.
       }).catch((e)=>{
@@ -232,12 +271,14 @@ function getCloudSettings(){
 | setItem    | 定义在存储对象上增加和修改数据的方法名 | string | "setItem" |
 | removeItem | 定义在存储对象上移除数据的方法名 | string | "removeItem" |
 
-示例：
+> 如果完全自定义内部存储对象，请始终确保自定义的内部存储对象的存储方法为同步函数，异步函数可能会造成状态混乱。
+
+示例：将 Lycabinet 配置为使用 SessionStorage.
 ```js
 // initOptions
 {
   localInterface: {
-    database: window.localStorage,
+    database: window.sessionStorage,
     getItem: "getItem", // method name, String
     setItem: "setItem", // method name, String
     removeItem: "removeItem", // method name, String
@@ -253,7 +294,13 @@ function getCloudSettings(){
 | option      | 描述                                           | type    | default | plugin |
 | ----------- | ---------------------------------------------- | ------- | ------- | ------ |
 | autoNotifyTabs | 是否启用多标签页自动同步数据(基于storage事件) | Boolean  | ?: true | check.js |
-| includes | 
+| includes | 自定义数据保存时指定包含的保存数据对象路径数组       | String[] | []      | filter.js |
+| includes | 自定义数据保存时指定排除的保存数据对象路径数组       | String[] | []      | filter.js |
+| lazy     | 是否启用监听数据对象自动保存                       | Boolean  |  true  | observer.js |
+| initWatch | whether transform the origin property in Observer | Boolean | true | observer.js |
+| deepWatch | whether consistently watch the inner Object value initial and later setted | Boolean | true|  observer.js |
+| shallowWatch | whether just watch the surface of the Object | Boolean | false | observer.js |
+
 
 默认启用的插件有：
 
@@ -286,21 +333,46 @@ Lycabinet支持双路保存
 
 ```js
 new Lycabinet("rootName", {
-  outerLoad: ([rootName, cabinet], success, error)=>{
-    // data = fetch(rootName) // fetch the data by rootName.
-    let data = {};
-    success(data); // call on success. give the fetched data.
+  outerLoad: ([rootName, cabinet], success, failed)=>{
+    // fake fetch
+    var data = fetch(rootName); // fetch the data by rootName.
+    // call first callback once success.
+    success(data); // give the fetched data.
+    // once failed
+    // failed();
   },
-  outerSave: ([rootName, cabinet], success, error)=>{
-    // save(rootName, cabinet) // some ajax or fetch manipulations.
+  outerSave: ([rootName, cabinet], success, failed)=>{
+    // fake save
+    save(rootName, cabinet) // some ajax or fetch manipulations.
+    // call first callback once success.
     success();
+    // call the seconde callback function once failed
+    // failed();
   },
-  outerClear: ([rootName, cabinet], success, error)=>{
-    // clear(root) 
+  outerClear: ([rootName, cabinet], success, failed)=>{
+    // fake clear
+    clear(root); // clear the cabinet by rootName.
+    // call first callback once success.
     success();
+    // call the seconde callback function once failed
+    // failed();
   },
 });
 ```
+
+对于每个选项: `outerLoad`, `outerSave`, 和`outerClear`都配置为一个函数方法。
+在这个函数方法内你可以使用API请求来完成相应的工作。
+
+这个函数方法有三个参数，第一个参数为相关信息的数组，如上例中`[rootName, cabinet]`，
+数组的第一个参数是当前`Lycabinet`实例对象的标识root名称，
+你可以使用它作为API存储中每个数据对象(cabinet)的存储键值。
+数组中的第二个参数是当前实例中的数据对象(cabinet)，保存到外部就将它提交上去。手动获取使用`cabinetIns.getCabinet()`。
+
+而第二个参数`success`，是一个回调函数，你应该在API请求成功后调用它。
+第三个参数`failed`，是请求失败情况下的回调函数，如果保存到外部的API请求失败了，你应该仅调用它。
+
+如果你的API请求是一个构造的Promise对象，只需要在`then`中调用`success`方法，在`catch`中调用`failed`方法即可。
+
 前面核心选项部分，其实已经放出了一个很好的示例了，请向前参考。
 
 
@@ -324,13 +396,31 @@ lactionIns.use(Lycabinet); // And the time the lazy method period in lycabinet i
 
 但在降低了节流防抖的计算成本，能更好的应用上贴近人性化的节流防抖设置保存频率。
 
+### Cabinet
+
+Lycabinet内部的一切改动都是围绕一个JS Object进行的，有时候我们使用 "数据对象" 来对其进行称呼。
+而通常情况下，`cabinet`就是其专有名称了。
+
+你可以使用 `cabinetIns.getCabinet()` 来获取这个cabinet的引用。
+使用 `cabinetIns.removeStore()` 来删除当前实例的cabinet。
+当然，只要在使用结束后调用了 `cabinetIns.destroy()` 就会顺带删除当前实例的cabinet。
+
+Lycabinet不仅对 cabinet 做了简单的状态保护，还对其添加了缓存。
+默认相同`root`名称的 Lycabinet 实例都具有相同的`cabinet`，类似于自动单例数据对象模式的 cabinet共享。
+
+如果你需要改变其默认模式，请在初始化时配置选项 `useSharedCabinet`, `shareCabinet`。
+具体参见前段: [选项](#options)
+
+如果不使用cabinet 共享模式，请谨慎对新的实例应用存储清除等方法，因为所有的内外部存储依赖的键值仍均为`root`,
+这可能导致全局状态的不一致。
+
 
 ### 安全模式
 
-默认情况下对于实例化的 lycabinet 对象是保护起来的。
+默认情况下对于实例化的 Lycabinet 对象是保护起来的。
 
 你应该通过 `set`, `get`, `delete`, `foreach`, `map`, `clear` 等方法
-来读写访问其中的数据。
+来读写访问其中的数据。这样才能保证 Lycabinet 内部的一些状态能正常工作。
 
 Lycabinet 有简单的数据状态管理功能，内置了一个[有限状态机](#有限状态机),
 
@@ -343,12 +433,12 @@ lycabinet_instance.set('target_key', value);
 ```
 set,get 的函数调用方式 太过麻烦,
 
-那么你可以通过调用`getStore`方法来获得保存的数据对象的一个引用，然后你可以直接在这个Object的引用自由的读写它.
+那么你可以通过调用`getCabinet`方法来获得保存的数据对象的一个引用，然后你可以直接在这个Object的引用自由的读写它.
 
 同时各种方法仍然有效。并且不妨碍任何save，load等操作.
 
 ```js
-const storage = lycabinet_instance.getStore();
+const storage = lycabinet_instance.getCabinet();
 storage.key_1 = {name:'desc',value:`That's pretty!`};
 lycabinet_instance.save();
 ```
@@ -362,14 +452,17 @@ lycabinet_instance.save();
 
 通常的状态周期如下：
 ```
+[On instantiation] -> 
 created -> mounted
--> [Load]
+[On load] ->  
 loading -> idle
--> [save]
+[On save] -> 
 saving -> busy -> idle
--> [clear]
+[On clear] -> 
 clearing -> idle
 ```
+
+`mounted`状态对应于最早能写
 
 对于最频繁的保存行为，Lycabinet为保存方法`save`,`lazySave`默认根据选项`saveMutex`开启了状态保护，
 也即只有处于 `idle` 状态的 Lycabinet 实例才能保存成功。
@@ -380,7 +473,7 @@ clearing -> idle
 
 对于如何确保cabinet实例加载完毕，可以通过监听 'loaded' 事件：
 ```js
-cabinet._on("loaded", ()=>{
+cabinetIns._on("loaded", ()=>{
   // do your jobs here!
   // ...
 });
@@ -391,17 +484,32 @@ cabinet._on("loaded", ()=>{
 Lycabinet 内置了一套事件系统，你可以通过使用 `_on`, `_once`, 来监听事件。
 用 `_off` 来取消`_on`监听的事件, 用 `_trigger` 来自定义触发事件。
 
-普通事件:
+对于需要判断一个事件是否已经触发，可以使用 `_isHappened` 方法。
 
-特殊事件: (具有特定功能，带有时间执行参数、需要处理的返回值等)
+上述方法传递事件名称
+
+普通事件:
+```ts
+type CabinetEventType =
+'created'|'mounted'| 
+'beforeLoad'| 'beforeLocalLoad'| 'localLoaded'| 'loaded'| 
+'loadFromCache'|
+'storageSync'|
+'setItem'| 'writeLock'| 'writeBackflow'| 
+'getItem'| 'removeItem'| 
+'lazySave'| 
+'beforeSave'| 'beforeLocalSave'| 'localSaved'| 'saved'| 'busy'|
+'beforeClear'| 'beforeLocalClear'| 'localCleared'| 'cleared'|
+'error'|
+'destroied';
+```
+
+特殊事件: (具有特定功能，带有事件执行参数、需要处理的返回值等)
 ```js
 "localLoaded", "localCleared", "localSaved"
 ```
-主要用于插件开发，充当函数钩子. 
+主要用于插件开发，充当钩子函数。
 
-主要应用：本地保存的数据原子性保持。
-
-对于需要判断一个事件是否已经触发，可以使用 `_isHappened` 方法.
 
 ### Debug Friendly.
 
@@ -415,7 +523,10 @@ Lycabinet 内置了一套事件系统，你可以通过使用 `_on`, `_once`, �
 
 也即: `Lycabinet.DEBUG = false`
 
-#### lycabinet.light.js
+### lycabinet.light.js
+
+If you want more slight package with just simple storage works, that an event system can not be that necessary.
+you can consider this. The package size is reduced by almost half.
 
 尽管Lycabinet编译后体积并不大，
 但如果你仅仅只是想使用简单的增改保存功能，那一个内嵌的事件系统和插件群确实是不必要的。
@@ -454,9 +565,7 @@ Lycabinet 内置了一套事件系统，你可以通过使用 `_on`, `_once`, �
 
 ### Filter
 
-在options中配置 `excludes` 和 `includes` 来自定义过滤或者筛选需要保存的数据对象。
-
-关于装载时自定义部分有待开发……
+在options中配置 `excludes` 和 `includes` 来自定义在保存时需要过滤或者筛选的数据对象。
 
 ```ts
 Interface FilterOptions {
@@ -464,10 +573,54 @@ Interface FilterOptions {
   includes: Array<string>,
 }
 ```
+以上选项可以只指定一个，不指定 includes 则默认包含全部数据。
+不指定 excludes 则默认在保存时不排除任何数据。
 
-然后对实例调用 `setFilter` 方法以激活过滤器，无参数。
+excludes 与 includes 选项均支持点分对象路径定位。
 
-<!-- 注意，每次修改 excludes 和 includes 选项后应重新应用 `setFilter` 方法以生效。 -->
+比如: 
+```js
+new Lycabinet('filterStore', {
+  initStorage: {
+    server: {
+      http: "192.168.0.1:2333",
+      sync: false,
+    },
+    settings: {
+      volume: 0.6,
+      danmu: {
+        limit: false,
+        speed: 8,
+      }
+    }
+  },
+  includes: ["server", "settings.danmu"],
+  excludes: ["server.http"],
+}).save();
+```
+
+对于以上初始配置，在调用保存选项后得到的内部存储字符串等效于：
+```js
+JSON.stringify({
+  server: {
+    sync: false,
+  },
+  settings: {
+    danmu: {
+      limit: false,
+      speed: 8,
+    }
+  }
+})
+```
+
+只要在初始配置项中传递了以上设置，Lycabinet将会自动调用`setFilter()`方法激活插件。
+
+如果你使用的是`light`版本，需要在处于`mounted`的状态后手动对实例调用 `setFilter()` 方法以激活过滤器。
+
+<!-- 与保存时过滤数据相反，装载时也可以自定义默认数据。
+关于装载时自定义默认数据部分有待开发…… -->
+
 
 ### Check
 

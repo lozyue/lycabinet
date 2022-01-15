@@ -42,7 +42,7 @@ export function initImbedding(Lycabinet){
           debounce: true, 
           // level: 3, // 1 Root 消息级钩子 // 默认普通消息
           action: (...params)=>{
-            // Find a big question of save action rewrite with laction if there are multi-instances.
+            // Fix a big trouble of save action rewrite with laction if there are multi-instances.
             // console.log(lycabinetIns)
             
             lycabinetIns.save(...params) 

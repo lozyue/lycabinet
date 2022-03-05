@@ -50,7 +50,7 @@ export function initImbedding(Lycabinet){
         },
       );
 
-      lycabinetIns._on("destroied", ()=>{
+      lycabinetIns._on("destroyed", ()=>{
         lactionIns.unregisterHook(LazyKey);
       });
     });

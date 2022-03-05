@@ -32,6 +32,10 @@ export function InitEventSystem(Lycabinet){
   
     self._trigger = function(name: CabinetEventType, ...params){
       const actions = subscriptions[name] || (subscriptions[name] = []);
+      // add trigger mark
+      if(!actions.counter) actions.counter=0;
+      actions.counter++;
+      
       const results: Array<unknown>= [];
       let preLen = actions.length;
       params.push(results);
@@ -43,10 +47,6 @@ export function InitEventSystem(Lycabinet){
           preLen = actions.length;
         }
       }
-      // add trigger mark
-      if(!actions.counter) actions.counter=0;
-      actions.counter++;
-      
       // returns last param if there is no hook. Using the last param to set the default value.
       return results.length>0
         ? arrayIndex(results, -1)
@@ -86,7 +86,7 @@ export function InitEventSystem(Lycabinet){
         'lazySave', 
         'beforeSave', 'beforeLocalSave', 'localSaved', 'saved', 'busy',
         'beforeClear', 'beforeLocalClear', 'localCleared', 'cleared',
-        'error', 'destroied',
+        'error', 'destroyed',
       ];
   
       new Set(Object.keys(subscriptions).concat(presets) ).forEach(item=>{

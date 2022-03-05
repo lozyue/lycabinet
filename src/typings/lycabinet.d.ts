@@ -40,7 +40,7 @@ export interface ConstructOptions {
 
 export interface LycabinetInstance {
   // Constructor
-  __init(root: string, options: ConstructOptions): undefined;
+  // __init(root: string, options: ConstructOptions): undefined;
   // Methods
   _init(cabinet: Object): LycabinetInstance;
   get(name: string): unknown;
@@ -54,14 +54,23 @@ export interface LycabinetInstance {
   lazySave(option: AccessOptions = {}): LycabinetInstance;
   forEach(callback: (item: any, key: string, cabinet: Object)=>any): LycabinetInstance;
   map(callback: (item: any, key: string, cabinet: Object)=>any): LycabinetInstance;
+  destroy();
   // Event hub
   _on(name: CabinetEventType, func: Function);
   _off(name: CabinetEventType, handle: Function);
   _once(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean);
   _isHappend(name: CabinetEventType, counts: number);
+  _trigger(name: CabinetEventType, ...params:any);
+  // Cabinet
+  getCabinet(): unknown; // Return cabinet of current instance.
+  getStore(): unknown; // Return the global shared cabinet whose root name is same to current instance.
+  isIdentical(): boolean; // Is current cabinet identical to the shared global cabinet.
+  hasStore(): boolean; // Is there shared global cabinet?
+  setStore(cabinet: Object): undefined; // Set the cabinet into global.
 
   options: ConstructOptions;
   status: string;
+  __root: string;
 
   // When upgrade with LactionJS
   _lazyKey: string;
@@ -99,5 +108,5 @@ export type CabinetEventType =
 'beforeSave'| 'beforeLocalSave'| 'localSaved'| 'saved'| 'busy'|
 'beforeClear'| 'beforeLocalClear'| 'localCleared'| 'cleared'|
 'error'|
-'destroied';
+'destroyed';
 

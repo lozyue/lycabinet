@@ -11,7 +11,7 @@ import * as _STATUS from '@/utils/status';
 import { 
   deepAssign, arbitraryFree, 
   is_Defined, is_PlainObject, is_Empty, is_String,
-  LogToken, DEBUG, 
+  LogToken, DEBUG, deepConditionalAssign, 
 } from '@/utils/util';
 
 export function InitCore(Lycabinet){
@@ -46,6 +46,7 @@ export function InitCore(Lycabinet){
       shareCabinet: true, // share the cabinet for global
       // Weather use deepAssign to contact when load from outer data.
       deepMerge: false, 
+      customMerge: null, // Applying just on loading.
       // local interfaces of storage
       localInterface: {
         database: window.localStorage,
@@ -160,15 +161,15 @@ export function InitCore(Lycabinet){
   /**
    * Delete an item by key.
    */ 
-  Proto.remove = function(keys: string[]){
+  Proto.remove = function(keys: string|string[]){
     let removed = false;
     arbitraryFree(keys, (k)=>{
       // Though it isn't disappeared immediately, But after JSON parse and stringify manipulations this will be cleared.
       if(this.__storage.hasOwnProperty(k)){
         this.set(k, void 0);
-        removed = true
+        removed = true;
       }
-    }); 
+    });
     removed && this._trigger('removeItem', keys, removed);
     return this;
   }
@@ -249,7 +250,7 @@ export function InitCore(Lycabinet){
    * @param { Boolean } concurrent Override the default options in `this.options.concurrent`
    * @param { Boolean } deepMerge Using deepAssign instead of Object.assign to merge the data from local and cloud.
    */
-  Proto.load = function(option: AccessOptions = {}){
+  Proto.load = function(option: AccessOptions & { disableMerge?: boolean} = {}){
     // merge default options.
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerLoad) as boolean;
@@ -275,9 +276,12 @@ export function InitCore(Lycabinet){
       initialData = this._trigger('localLoaded', initialData); // Only take effect on the last element.
 
       localTemp = JSON.parse( initialData );
-      if(deepMerge)
-        deepAssign(this.__storage, localTemp);
-      else
+      if(deepMerge){
+        if(option.disableMerge)
+          deepAssign(this.__storage, localTemp);
+        else
+          deepConditionalAssign(this.__storage, localTemp, this.options.customMerge);
+      }else
         Object.assign(this.__storage, localTemp);
     };
 
@@ -294,9 +298,12 @@ export function InitCore(Lycabinet){
       if(!is_Defined(data) || !is_PlainObject(data))
         throw new Error(`${LogToken}Load cabinet with empty 'data' which type is ${typeof data}`);
         
-      if(deepMerge)
-        deepAssign(this.__storage, data);
-      else 
+      if(deepMerge){
+        if(option.disableMerge)
+          deepAssign(this.__storage, data);
+        else
+          deepConditionalAssign(this.__storage, data, this.options.customMerge);
+      }else 
       // shallow assign makes cloud weight heavier.
         Object.assign(this.__storage, data);
       
@@ -434,8 +441,6 @@ export function InitCore(Lycabinet){
    * Call it to clear the sideEffect produce by kinds of plugins.
    */
   Proto.destroy = function(autoClear = true){
-    this._trigger("destroied");
-    
     if(autoClear){
       this.clear({
         reset: true,
@@ -444,6 +449,9 @@ export function InitCore(Lycabinet){
       });
       this.removeStore();
     }
+
+    this.status = _STATUS.DESTROYED;
+    this._trigger("destroyed");
   }
 
 }

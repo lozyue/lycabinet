@@ -8,7 +8,7 @@ const IDLE = 'idle';
 const LOADING = 'loading';
 const SAVING = 'saving';
 const CLEARING = 'clearing';
-
+const DESTROYED = 'destroyed';
 
 export {
   CREATED,
@@ -17,4 +17,5 @@ export {
   SAVING,
   CLEARING,
   MOUNTED,
+  DESTROYED
 };

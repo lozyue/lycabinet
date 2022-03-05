@@ -1,21 +1,21 @@
 # Lycabinet
 
-A slight JSON Type Object storage helper with good performance.
+A slight JSON Type Object storage helper with good performance works in the browser.
 
-一个性能还不错的轻量级JSON对象数据存储辅助类.
+一个性能还不错的浏览器端轻量级JSON对象数据存储辅助类.
 
 
 ## Description
 
-一个性能还不错的轻量级JSON对象数据存储辅助类.
+一个性能还不错的轻量级JSON对象数据存储辅助类。
 
-支持存储 JSON 原生支持的基本数据类型
+支持存储 JSON 原生支持的基本数据类型。
 
-提供 lazy 系列方法, 可以用于频繁修改场景以提高性能.
+提供 lazy 系列方法, 可以用于频繁修改场景以提高性能。
 
-目前支持 包括本地存储 LocalStorage / SessionStorage 和自定义外部 API 存储以及两种并行的存储模式.
-Storage能够在有多个页面的时候自动同步修改更新数据。
+目前支持 包括本地存储 LocalStorage / SessionStorage等 和自定义外部 API 存储以及两种并行的存储模式。
 
+能够在有多个页面的时候自动同步修改更新数据。
 甚至有简单的状态管理功能。
 
 
@@ -30,7 +30,11 @@ $ npm install lycabinet
 Using jsDelivr cdn:
 
 ```html
+<!-- Full build -->
 <script src="https://cdn.jsdelivr.net/npm/lycabinet/dist/lycabinet.min.js"></script>
+
+<!-- Light version -->
+<script src="https://cdn.jsdelivr.net/npm/lycabinet/dist/lycabinet.light.min.js"></script>
 ```
 
 
@@ -68,7 +72,8 @@ rootKey 用于指定存储对象类型的标识键值。
 
 `autoload`选项相当于默认执行了两个方法:
 ```js
-cabinetIns
+cabinetIns._init({}); // to replace the cabinet of initStorage options.
+cabinetIns.load();
 ```
 
 
@@ -86,15 +91,14 @@ cabinetIns.load();
 
 详见: [外部存储XHR通信配置](#外部存储xhr通信配置)
 
-
 选项：
 ```ts
 type AccessOptions = Partial<{
-  // 是否保存到外部存储，需配置outerSave选项以生效。
+  // 指定是否保存到外部存储，需配置outerSave选项以生效。
   onCloud: boolean|null,
-  // 是否同时保存到本地存储 (在外部存储的时候) 
+  // 指定是否同时保存到本地存储 (在外部存储的时候) 
   concurrent: boolean|null, 
-  // 本次操作是否使用深度合并
+  // 指定本次操作是否使用深度合并 (可配置 customMerge 自定义合并策略)
   deepMerge: boolean|null,
   // 当操作完成时调用的回调函数（异步存储时尤其有用）
   onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
@@ -105,8 +109,8 @@ type AccessOptions = Partial<{
 
 清除数据使用`clear`方法，清除本地/外部存储，使用方式类似`load`方法。
 
-但`clear`方法仅清除存储的数据（本地存储和外部存储），默认配置同步实例配置。
-而如果要将内部cabinet对象数据也“清空“可以在调用`clear`时添加 "reset" 选项为true
+但`clear`方法默认仅清除存储的数据（本地存储和外部存储），而cabinet数据对象在内存中仍然没有改变。
+而如果要将内部 cabinet 对象数据也重置为空 可以在调用`clear`的选项中添加值为 true 的 "reset" 属性。
 ```js
 // Eliminate the value added by `set`.
 cabinetIns.clear({
@@ -114,8 +118,14 @@ cabinetIns.clear({
 });
 ```
 
-#### Read/Write Data
+对于`load`方法，也可以临时禁用实例选项的 customMerge 规则，因为 customMerge 可能通常用于合并更多的数据。
+这可能导致一些特定的情况下数据清除不掉的问题。
 
+因此 load 方法也支持了额外的 `disableMerge` 选项，传递`true`以临时禁用自定义 customMerge 选项。
+
+> 关于 customMerge 选项，参考 [Options](#options)
+
+#### Read/Write Data
 
 通过属性名读取数据使用 `get` 方法, 支持别名 `read`
 ```js
@@ -128,7 +138,7 @@ cabinetIns.get("info");
 写数据使用 `set` 方法或者 `lazySet` 方法来指定属性来设定一个数据，
 后者和前者的区别是是否自动懒保存。
 
-也即 `lazySet(,,)` 相当于 `cabinetIns.set(...).lazySave(...)`
+也即 `lazySet(key, value, options)` 相当于 `cabinetIns.set(key,value).lazySave(options)`
 
 注意：使用set方法进行数据写入并不会自动保存
 ```js
@@ -146,12 +156,24 @@ cabinetIns.set("info",{
 
 但你也可以使用`$get`方法传递点分对象路径来读取其值，路径不存在返回undefined而不会报错。
 
-注意：该方法由 Oberser.js 插件提供。
+注意：该方法由 Observer.js 插件提供。
 
 ```js
 cabinetIns.$get("info.age");
 // 返回 =>
 // 30
+```
+
+如果你不在需要某个属性值如 age ，那么可以使用set方法将其设定为 undefined :
+```js
+cabinetIns.set("age", undefined);
+```
+
+当然你也可以使用`remove`方法来一次清除一个或多个属性, 支持别名 `delete`
+```js
+cabientIns.remove("age");
+// Muti-remove
+cabinetIns.remove(["age", "weight"]);
 ```
 
 #### Save Data
@@ -179,11 +201,17 @@ cabinetIns.save({
 配置外部存储详见: [外部存储XHR通信配置](#外部存储xhr通信配置)
 
 
-### options
+### Destory
+
+为避免内存泄漏，如果你只是在周期内临时使用一个`Lycabinet`实例, 
+那么你始终应该在丢弃它时手动调用 `destroy()` 方法以便于JS GC回收内存。
+
+
+### Options
 
 #### Construction Options
 
-初始化构造选项: 
+大部分初始化选项都会被合并到`Lycabinet`实例的 `options` 属性中，并且其中大多数也支持运行时修改有效。
 
 ##### 核心选项
 
@@ -200,14 +228,15 @@ cabinetIns.save({
 | outerSave   | 外部存储保存方法配置,详见[外部存储XHR通信配置](#外部存储xhr通信配置) | Object  | null    |
 | outerClear  | 外部存储清除方法配置,详见[外部存储XHR通信配置](#外部存储xhr通信配置) | Object  | null    |
 | localInterface | 配置本地存储对象及方法，可以自定义对象。详情见下                 | Object  | { ...localStorage } |
-| deepMerge   | 在调用`load`装载数据时将加载的cabinet和已有的深层合并               | Boolean | false, 
+| deepMerge   | 在调用`load`装载数据时将加载的cabinet和已有的深层合并               | Boolean | false |
+| customMerge | 自定义装载时数据合并规则, 接收要合并的数据返回合并结果; 仅deepMerge启用时有效 | (srcObj, dstObj)=>Object | null | 
 | shareCabinet | 允许当前实例的cabinet共享到全局以便多个相同 root 的实例引用    | Boolean  | true     |
 | useSharedCabinet | 当前实例将不生成新的数据对象，如果已经有共享的cabinet      | Boolean  | true     |
 | logEvent  | 是否在控制台打印当前实例触发的事件流,需要全局DEBUG选项开启时才有效 | Boolean  | false    |
 
-示例:
+- 示例:
 ```js
-new Lycabinet(PublicConsistentCabinetName, {
+new Lycabinet("rootName", {
   deepMerge: true, // For interior Object-type prop reference keep.
   concurrent: true, // always set storage both cloud and local.
   oncloud: true, // same to default
@@ -263,7 +292,47 @@ function getCloudConfig(){
 }
 ```
 
-其中 localInterface 配置对象具体如下：
+- customMerge
+
+用于 "load" 方法载入数据时自定义合并规则。
+常用于对于数组属性存储的处理。
+
+因为即使是深度合并默认的规则也碰到cabinet的属性值为数组时是直接使用新的值覆盖，
+而有时候我们想要保留更多的数据比如将相同对象路径的数组属性合并去重不是直接覆盖。
+
+我们可以在初始化时这么配置:
+```js
+new Lycabinet("rootName", {
+  deepMerge: true, // Global defaultly enable for customMerge
+  // Custom Merge strategy
+  customMerge: (source, target)=>{
+    const ObjArrMergeKey = 'name';
+    if( Array.isArray(source) && source.length 
+      && Array.isArray(target)
+    ){
+      // De-duplicate merge as normal data-type;
+      let item;
+      for(let index=0;index<target.length;index++){
+        item = target[index];
+        let find = 0;
+        for(; find<source.length; find++){
+          // Check redundant.
+          if(source[find] === item)
+            break;
+        }
+        if(source.length===find)
+          source[find] = item;
+      }
+      return source;
+    }else
+      return target;
+  }
+});
+```
+
+- localInterface
+
+localInterface 配置对象具体如下：
 | option     | 描述                                          | type    | default |
 | ----------- | -------------------------------------------- | ------- | ------- |
 | database   | 存储对象的引用，可以是sessionStorage甚至自定义对象等 | Object | localStorage |
@@ -378,7 +447,7 @@ new Lycabinet("rootName", {
 
 ## Advance
 
-与 Laction JS 共同使用
+与 [LactionJS](https://github.com/lozyue/laction) 共同使用
 
 升级 lazy 系列方法的性能表现。
 
@@ -386,14 +455,14 @@ new Lycabinet("rootName", {
 在初始化仅需调用一下函数即可完成
 ```js
 import Lycabinet from 'lycabinet';
-const lactionIns = new Laction(...options); 必须先引入 LactionJS 并初始化其一个实例
+import Laction from 'laction';
+const lactionIns = new Laction(...options); // 必须先引入 LactionJS 并初始化其一个实例
 lactionIns.use(Lycabinet); // And the time the lazy method period in lycabinet is depends on laction configurations and with a better performance.
 ```
 
 这将改变 lycabinet 内部 lazySave 的节流防抖机制
 
 虽然节流防抖周期将取决于 laction 实例，
-
 但在降低了节流防抖的计算成本，能更好的应用上贴近人性化的节流防抖设置保存频率。
 
 ### Cabinet
@@ -460,6 +529,8 @@ loading -> idle
 saving -> busy -> idle
 [On clear] -> 
 clearing -> idle
+[On destroy] ->
+destroyed
 ```
 
 `mounted`状态对应于最早能写
@@ -501,14 +572,14 @@ type CabinetEventType =
 'beforeSave'| 'beforeLocalSave'| 'localSaved'| 'saved'| 'busy'|
 'beforeClear'| 'beforeLocalClear'| 'localCleared'| 'cleared'|
 'error'|
-'destroied';
+'destroyed';
 ```
 
 特殊事件: (具有特定功能，带有事件执行参数、需要处理的返回值等)
 ```js
 "localLoaded", "localCleared", "localSaved"
 ```
-主要用于插件开发，充当钩子函数。
+这些事件依赖监听函数的返回值。主要用于插件开发，充当钩子函数。
 
 
 ### Debug Friendly.
@@ -546,10 +617,10 @@ you can consider this. The package size is reduced by almost half.
 （Some are in developing）
 
 - `Observer.js`// 将数据对象变为响应式的可监视对数据对象的改动并自动调用保存方法。并可在数据对象上使用`$addListener`和`$removeListener`添加或删除响应数据变更的方法。
-- `Check.js` // (available)用于
+- `Check.js` // 用于增强健壮性，并提供了多标签页时的数据对象同步功能
 - `Filter.js` // 可通过 `excludes` 和 `includes` 来过滤筛选需要进行保存的属性值, 支持 dot-split `.` 分割子属性
 - `Expire.js` // (todo...) 可模拟cookie为对象增加有效时间并自动清除过期的 Cabinet，但也不完全可靠。
-- `zip.js` // (todo...) 对存储的 json 进行压缩或加密，安全性略微提高但并不可靠。
+- `Zip.js` // (todo...) 对存储的 json 进行压缩或加密，安全性略微提高但并不可靠。
 
 插件功能在默认的编译版本中已自动内置，需要配置相应选项或者调用相应方法启用。
 

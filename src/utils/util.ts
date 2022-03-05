@@ -10,7 +10,7 @@
 export const arrayIndex = function (arr, index) {
   index = (arr.length + index) % arr.length;
   if (arr[index] === undefined) {
-    console.error(`The index ${index} in array ${arr.toString()} is overflowed!`);
+    DEBUG&& console.error(`The index ${index} in array ${arr.toString()} is overflowed!`);
   }
   return arr[index];
 }
@@ -90,8 +90,7 @@ export const addStoreListener = (()=>{
 
 /**
  * Deep Object.assign source to target.
- * @param target
- * @param source
+ * @param { null|Object, Object... }...objs
  */
 export const deepAssign = function (...objs) {
   let merged;
@@ -107,6 +106,27 @@ export const deepAssign = function (...objs) {
     return target;
   }, objs[0]); // The third param is to set default value.
   return merged;
+}
+
+/**
+ * Deep Object.assign source to target.
+ * @param target
+ * @param source
+ * @param condition Receive the to contacted source and target value and returns the custom result.
+ */
+export const deepConditionalAssign = function (source, target, condition:null|Function=null ) {
+  for (let item in target) {
+    if (!(source[item] && is_PlainObject(source[item])) ) {
+      // The source Item won't be PlainObject or FalseValue.
+      if(!condition)
+        source[item] = target[item];
+      else
+        source[item] = condition(source[item], target[item]);
+    } else {
+      deepConditionalAssign(source[item], target[item]);
+    }
+  }
+  return source;
 }
 
 /**

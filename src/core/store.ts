@@ -18,6 +18,7 @@ export function InitStore(Lycabinet){
   }
 
   /**
+   * Check cache consistent.
    * Conclude whether the current cabinet is consistent with the inner cache.
    * @returns { Boolean }
    */
@@ -56,6 +57,7 @@ export function InitStore(Lycabinet){
       || !this.isIdentical()
     ) return false;
     __cabinet[this.__root] = void 0;
+    return true;
   }
 
   Lycabinet.$removeStore = function(root: string){

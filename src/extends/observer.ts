@@ -15,8 +15,8 @@ import {
 let onSetted: Function| null = null;
 
 /**
- * Targets
- * @param Lycabinet 
+ * Todo: 
+ *   Support async auto-save when cabinet changes.(Base on Task Queue)
  */
 
 export function addObserver(Lycabinet){
@@ -47,7 +47,7 @@ export function addObserver(Lycabinet){
   };
 
   // Convert the path target to be reactive. Check redundant Prevent by default.
-  Lycabinet.$set = function(target: Object, pathList: string[], deep=false, shallow =true){
+  Lycabinet.$active = function(target: Object, pathList: string[], deep=false, shallow =true){
 
     // CurveSet the target value.
     return curveSet(target, pathList, (innerTarget, kname)=>{
@@ -73,8 +73,8 @@ export function addObserver(Lycabinet){
    * Warning: If the value in path end is assigned with non-PlainObject type value previously,
    *  the value will be override by `{}`
    */ 
-  Proto.$set = function(pathName: string, deep=false, shallow =true){
-    return Lycabinet.$set(this.__storage, pathName.split('.'), deep, shallow);
+  Proto.$active = function(pathName: string, deep=false, shallow =true){
+    return Lycabinet.$active(this.__storage, pathName.split('.'), deep, shallow);
   }
   // Makes the target to be reactive
   Proto.$get = function(pathName: string){

@@ -22,7 +22,7 @@ const InitEventSystem = function(Lycabinet){
   const Protos = Lycabinet.prototype;
   const FakeFunc = new Function();
 
-  Protos._isHappend = FakeFunc;
+  Protos._isHappened = FakeFunc;
   Protos._setlog = FakeFunc;
   Protos._once = FakeFunc;
   Protos._trigger = FakeFunc;

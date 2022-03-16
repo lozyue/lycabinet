@@ -7,15 +7,15 @@ import { removeArrayItem, is_Function, DEBUG, arrayIndex, EnvAssociate, is_Defin
 
 export function InitEventSystem(Lycabinet){
   let preOwnner = null;
-  Lycabinet.mixin(function(self){
+  Lycabinet.mixin(function(_self){
     let subscriptions: Object = null as unknown as Object; 
 
-    if(self!==preOwnner){
+    if(_self!==preOwnner){
       subscriptions = Object.create(null);
     }
-    preOwnner = self;
+    preOwnner = _self;
 
-    self._on = function(name: CabinetEventType, func: Function){
+    _self._on = function(name: CabinetEventType, func: Function){
       if(DEBUG &&!is_Function(func)){
         throw new Error("[Laction]:The second parameter of _on method must be a callback function!");
       }
@@ -25,16 +25,24 @@ export function InitEventSystem(Lycabinet){
       actions.push(func);
     };
     
-    self._off = function(name: CabinetEventType, handle: Function){
+    _self._off = function(name: CabinetEventType, handle: Function){
       const actions = subscriptions[name] || (subscriptions[name] = []);
+      if(actions._lock===true){
+        // Postpone the remove action to nextTick.
+        return Promise.resolve().then(()=>{
+          return removeArrayItem(actions, handle);
+        });
+      }
       removeArrayItem(actions, handle);
     };
   
-    self._trigger = function(name: CabinetEventType, ...params){
+    _self._trigger = function(name: CabinetEventType, ...params){
       const actions = subscriptions[name] || (subscriptions[name] = []);
       // add trigger mark
-      if(!actions.counter) actions.counter=0;
-      actions.counter++;
+      if(!actions._counter) actions._counter=0;
+      actions._counter++;
+      // Add triggering lock protection.
+      actions._lock = true;
       
       const results: Array<unknown>= [];
       let preLen = actions.length;
@@ -42,11 +50,11 @@ export function InitEventSystem(Lycabinet){
       for(let index=0; index<preLen; index++){
         let temp = actions[index].apply(this, params);
         is_Defined(temp) && results.push( temp );
-        if(preLen !== actions.length){
-          index--;
-          preLen = actions.length;
-        }
       }
+      
+      // Unlock the event;
+      actions._lock = false;
+
       // returns last param if there is no hook. Using the last param to set the default value.
       return results.length>0
         ? arrayIndex(results, -1)
@@ -55,10 +63,12 @@ export function InitEventSystem(Lycabinet){
           : null;
     };
   
-    self._once = function(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean = 0){
+    _self._once = function(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean = false){
       const subs = subscriptions[name] || (subscriptions[name] = []);
-      if(subs.counter && instantOnTriggered!==false && ~~instantOnTriggered <= subs.counter ){
-        func(subs.counter);
+      if(subs._counter && instantOnTriggered!==false 
+        && _self._isHappened(name, ~~instantOnTriggered) 
+      ){
+        func(subs._counter);
         return ;
       }
       var handleFunc = function(...params){
@@ -68,12 +78,13 @@ export function InitEventSystem(Lycabinet){
       this._on(name, handleFunc);
     };
 
-    self._isHappend = function(name: CabinetEventType, counts: number=0){
-      return (subscriptions[name] || (subscriptions[name] = [])).counter > counts;
+    _self._isHappened = function(name: CabinetEventType, counts: number=1){
+      const subs = (subscriptions[name] || (subscriptions[name] = []));
+      return subs._counter >= counts;
     }
   
     // for Debug
-    !EnvAssociate.Light && (self._setlog = function(){
+    !EnvAssociate.Light && (_self._setlog = function(){
       if(!Lycabinet.DEBUG) return false;
 
       const presets: CabinetEventType[] = [
@@ -105,5 +116,10 @@ export function InitEventSystem(Lycabinet){
       return true;
     });
     
+    _self._on("destroyed", ()=>{
+      for(let item in subscriptions){
+        delete subscriptions[item];
+      }
+    });
   });
 }

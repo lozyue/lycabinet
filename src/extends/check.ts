@@ -55,6 +55,11 @@ export function addCheck(Lycabinet){
 
     for(let index=0; index<localContext.length; index++){
       cabinetIns = localContext[index];
+      if(!cabinetIns.options.autoNotifyTabs){
+        DEBUG && console.log("TabSync is disabled!");
+        return;
+      }
+
       // Do not do redundant reload if current cabinet is shared by another.
       // We think that in one page the cabinet has the same root is always shared, but there are troubles if
       //  the first instance is collected by GC.
@@ -96,7 +101,7 @@ export function addCheck(Lycabinet){
 
     // add options for custom database which is not localStorage.
     objectSupplement(cabinetIns.options, {
-      autoNotifyTabs: cabinetIns.options.localInterface.database!==window.localStorage,
+      autoNotifyTabs: true,
     });
 
     cabinetIns._on("saved", function(onCloud, concurrent){

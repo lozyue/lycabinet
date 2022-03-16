@@ -6,7 +6,7 @@
  * @createdTime 2021-03-28
  */
 
-import { ConstructOptions, AccessOptions } from '@/typings/lycabinet';
+import { ConstructOptions, AccessOptions, SubSet } from '@/typings/lycabinet';
 import * as _STATUS from '@/utils/status';
 import { 
   deepAssign, arbitraryFree, 
@@ -78,7 +78,9 @@ export function InitCore(Lycabinet){
    * Todo: add reduplicate._init check and warning.
    */
   Proto._init = function(cabinet = null){
-    cabinet = cabinet || this.options.initStorage || Object.create(null);
+    const options = this.options;
+    cabinet = cabinet || options.initStorage || Object.create(null);
+
     // write protection backflow
     const writeBackflow = function(){
       if(is_Empty(this.__tempStorage)) return;
@@ -92,26 +94,28 @@ export function InitCore(Lycabinet){
 
     // override the options by the already existed cabinet.
     // this is global shared with all the instance in the page.
-    const isLoadFromCache = this.options.useSharedCabinet && this.hasStore();
+    const isLoadFromCache = options.useSharedCabinet && this.hasStore();
     if(isLoadFromCache){
-      // this.__storage = cabinet = this.getStore(); // That's useless cause cabinet is just a Object reference.
       this.__storage = this.getStore();
       // Sync status.
-      Object.assign(cabinet, this.__storage);
-      this._trigger("loadFromCache");
+      if(options.deepMerge){
+        deepConditionalAssign(cabinet, this.__storage, options.customMerge);
+      }else
+        Object.assign(cabinet, this.__storage);
+      this._trigger("loadFromCache", this.__storage);
     }
     else{
       this.__storage = this.__storage || cabinet;
-      if(this.options.shareCabinet)
+      if(options.shareCabinet)
         this.setStore(this.__storage);
     }
 
     this.status = _STATUS.MOUNTED;
-    this._trigger("mounted"); // Interior cabinet access attainable.
+    this._trigger("mounted"); // Interior cabinet access is attainable.
 
     if(!isLoadFromCache){
       // Auto load. Only when the cabinet in using is private.
-      if(this.options.autoload) this.load(); // default using shallow assign.
+      if(options.autoload) this.load(); // default using shallow assign.
       else this.status = _STATUS.IDLE; // Amend the status.
     } else {
       this.status = _STATUS.IDLE; // Amend the status.
@@ -180,7 +184,7 @@ export function InitCore(Lycabinet){
    * @param {Boolean} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
-  Proto.clear = function(option: AccessOptions & { reset?: boolean } = {}){
+  Proto.clear = function(option: SubSet<AccessOptions, "deepMerge"> & { reset?: boolean } = {}){
     // merge default options.
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerClear) as boolean;
@@ -204,9 +208,9 @@ export function InitCore(Lycabinet){
 
     const toEnd = (isSuccess: boolean)=>{
       this.status = _STATUS.IDLE;
-      this._trigger('cleared', onCloud, concurrent);
       // Callback
       option.onceDone && option.onceDone(isSuccess, onCloud);
+      this._trigger('cleared', onCloud, concurrent);
     };
 
     // Cloud clear
@@ -287,9 +291,9 @@ export function InitCore(Lycabinet){
 
     const toEnd = (isSuccess: boolean)=>{
       this.status = _STATUS.IDLE;
-      this._trigger('loaded', onCloud, concurrent);
       // Callback
       option.onceDone && option.onceDone(isSuccess, onCloud);
+      this._trigger('loaded', onCloud, concurrent);
     }
 
     // Cloud load
@@ -337,11 +341,11 @@ export function InitCore(Lycabinet){
    * @param {*} onCloud 
    * @param {Boolean} concurrent Override the default options in `this.options.concurrent`
    */
-  Proto.save = function(option: AccessOptions = {}){
+  Proto.save = function(option: SubSet<AccessOptions, 'deepMerge'> = {}){
     // merge default options.
     const onCloud = (is_Defined(option.onCloud)? option.onCloud: !!this.options.outerSave) as boolean;
     const concurrent = is_Defined(option.concurrent)? option.concurrent: this.options.concurrent;
-
+    
     // check the status for mutex protection
     let check = this.options.saveMutex && !this.isVacant();
     this._trigger("beforeSave", check);
@@ -374,9 +378,9 @@ export function InitCore(Lycabinet){
     
     const toEnd = (isSuccess: boolean)=>{
       this.status = _STATUS.IDLE;
-      this._trigger('saved', onCloud, concurrent);
       // Callback
       option.onceDone && option.onceDone(isSuccess, onCloud);
+      this._trigger('saved', onCloud, concurrent);
     }
 
     // Cloud save
@@ -440,16 +444,16 @@ export function InitCore(Lycabinet){
    * For custom destroy.
    * Call it to clear the sideEffect produce by kinds of plugins.
    */
-  Proto.destroy = function(autoClear = true){
+  Proto.destroy = function(autoClear = false){
     if(autoClear){
       this.clear({
         reset: true,
-        onCloud: false, 
+        onCloud: false,
         concurrent: false,
       });
-      this.removeStore();
     }
-
+    
+    this.removeStore();
     this.status = _STATUS.DESTROYED;
     this._trigger("destroyed");
   }

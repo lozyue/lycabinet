@@ -9,6 +9,7 @@ export function initAlias(Lycabinet){
   Proto.delete = Proto.remove;
 
   Proto.read = Proto.get;
+  Proto.write = Proto.set;
 
   Proto.storage = Proto.getCabinet;
 

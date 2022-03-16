@@ -1,5 +1,7 @@
 // Types of Lycabinet
 
+export type SubSet<T, K> = Pick<T, Exclude<keyof T, K>>;
+
 export type AccessOptions = Partial<{
   onCloud: boolean|null, 
   concurrent: boolean|null,
@@ -35,6 +37,17 @@ export interface ConstructOptions {
   outerSave: null| Function,
   outerClear: null| Function,
 
+  // From Check.js
+  autoNotifyTabs: boolean,
+  // From Filter.js
+  includes: string[],
+  excludes: string[],
+  // From Observer.js
+  lazy: boolean, // whether do automatically save when the watching Object changes.
+  initWatch: boolean, // whether transform the origin property in Observer.
+  shallowWatch: boolean,
+  deepWatch: boolean, // whether consistently watch the Object type value setted in initial data.
+
   logEvent: boolean, // use this to log event globally from scratch
 }
 
@@ -54,12 +67,12 @@ export interface LycabinetInstance {
   lazySave(option: AccessOptions = {}): LycabinetInstance;
   forEach(callback: (item: any, key: string, cabinet: Object)=>any): LycabinetInstance;
   map(callback: (item: any, key: string, cabinet: Object)=>any): LycabinetInstance;
-  destroy();
+  destroy(autoClear: boolean);
   // Event hub
   _on(name: CabinetEventType, func: Function);
   _off(name: CabinetEventType, handle: Function);
   _once(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean);
-  _isHappend(name: CabinetEventType, counts: number);
+  _isHappened(name: CabinetEventType, counts: number);
   _trigger(name: CabinetEventType, ...params:any);
   // Cabinet
   getCabinet(): unknown; // Return cabinet of current instance.
@@ -88,7 +101,7 @@ export interface LycabinetStatic extends LycabinetInstance {
   $removeStore(root: string);
   // If plugin/observer.js is enabled
   $get(target: Object, pathList: string[]);
-  $set(target: Object, pathList: string[], deep?: boolean, shallow?: boolean);
+  $active(target: Object, pathList: string[], deep?: boolean, shallow?: boolean);
   // If plugin/filter.js is enabled
   $filter(cabinet: Object, includes: string[], excludes: string[]): Object;
 }

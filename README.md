@@ -62,28 +62,30 @@ var cabinetIns=new Lycabinet("rootKey",{
   }
 });
 ```
-这里就建立了一个 rootKey 为`cabinet`的存储对象。
+这里就建立了一个 rootKey 为`rootKey`的存储对象。
 你可以方便的对它进行读写装载保存等操作。
 
 rootKey 用于指定存储对象类型的标识键值。
 
-比如 Lycabinet 默认使用 LocalStorage 进行本地存储，那么这个 rootKey=`cabinet` 就会作为LocalStorage一个数据项的键名。
-当然你也也可以指定 存储对象 为 SessionStorage ，甚至可以额外配置一个外部数据支持。
+比如 Lycabinet 默认使用 LocalStorage 进行本地存储，那么这个 rootKey=`rootKey` 就会作为LocalStorage一个数据项的键名。
+当然你也可以指定 存储对象 为 SessionStorage ，甚至可以额外配置一个外部数据支持，rootKey都是作为最核心的数据对象标识
+（实际上保存的时候存储的都是经过JSON序列化后的字符串）。
 
-`autoload`选项相当于默认执行了两个方法:
+如果将`autoload`选项禁用，则一定要手动调用`_init`方法:
 ```js
-cabinetIns._init({}); // to replace the cabinet of initStorage options.
-cabinetIns.load();
+cabinetIns._init(); // Accept a param to replace as the initStorage in option.
 ```
-
-
-#### Load / Clear
-
-使用 load 方法初始化载入数据，如果关闭autoload选项，就需要
+然后示情况调用
 ```js
 cabinetIns.load();
 ```
-内置存储库默认基于 localStorage ,调用 load 后将载入数据。
+
+#### load / clear
+
+使用 load 方法初始化载入数据，用于将已经存储的数据载入内存中，以防调用Save时保存的数据覆盖而丢失之前存储的数据。
+在保持默认启用的autoload选项时，可以省略手动调用。
+
+内置存储库默认基于 localStorage ,调用 load 后将载入本地已有数据，载入数据以合并的方式，可自定义合并规则(默认浅合并)。
 
 但目前在初始化时默认的`autoload`选项为true, 也就会自动调用该方法载入数据。
 
@@ -93,6 +95,7 @@ cabinetIns.load();
 
 选项：
 ```ts
+function load(option: AccessOptions): LycabinetInstance;
 type AccessOptions = Partial<{
   // 指定是否保存到外部存储，需配置outerSave选项以生效。
   onCloud: boolean|null,
@@ -100,6 +103,8 @@ type AccessOptions = Partial<{
   concurrent: boolean|null, 
   // 指定本次操作是否使用深度合并 (可配置 customMerge 自定义合并策略)
   deepMerge: boolean|null,
+  // 指定本次操作是否不使用自定义合并策略
+  disableMerge: boolean,
   // 当操作完成时调用的回调函数（异步存储时尤其有用）
   onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
 }>
@@ -107,7 +112,20 @@ type AccessOptions = Partial<{
 上述选项中 `onCloud`, `concurrent`, `deepMerge` 即便在实例化时未指定也均有一个会自动根据已知选项生成的默认值，
 如果在调用`load`,`save`,`clear`方法时不指定其中的选项则默认使用相应默认实例选项值。
 
-清除数据使用`clear`方法，清除本地/外部存储，使用方式类似`load`方法。
+清除数据使用`clear`方法，清除本地/外部存储，选项如下:
+
+```ts
+function clear(option: AccessOptions): LycabinetInstance;
+type AccessOptions = Partial<{
+  // 指定是否保存到外部存储，需配置outerSave选项以生效。
+  onCloud: boolean|null,
+  // 指定是否同时保存到本地存储 (在外部存储的时候) 
+  concurrent: boolean|null, 
+  // 当操作完成时调用的回调函数（异步存储时尤其有用）
+  reset: boolean,
+  onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
+}>
+```
 
 但`clear`方法默认仅清除存储的数据（本地存储和外部存储），而cabinet数据对象在内存中仍然没有改变。
 而如果要将内部 cabinet 对象数据也重置为空 可以在调用`clear`的选项中添加值为 true 的 "reset" 属性。
@@ -154,7 +172,7 @@ cabinetIns.set("info",{
 
 由于上述cabinet实例对象中的`info`属性是一个对象，因此其内的`age`,`weight`等属性无法直接读写。
 
-但你也可以使用`$get`方法传递点分对象路径来读取其值，路径不存在返回undefined而不会报错。
+但你也可以使用`$get`方法传递点分对象路径来读取任意深的值，其好处是如果中间路径中某个对象不存在链断裂将返回undefined而不会报错。
 
 注意：该方法由 Observer.js 插件提供。
 
@@ -178,7 +196,18 @@ cabinetIns.remove(["age", "weight"]);
 
 #### Save Data
 
-是的，`save`类方法的选项也同`load`,`clear` 一样，所以以下就不再赘述了。
+`save`类的方法的选项也类似`load`,`clear`:
+```ts
+function save(option: AccessOptions): LycabinetInstance;
+type AccessOptions = Partial<{
+  // 指定是否保存到外部存储，需配置outerSave选项以生效。
+  onCloud: boolean|null,
+  // 指定是否同时保存到本地存储 (在外部存储的时候) 
+  concurrent: boolean|null, 
+  // 当操作完成时调用的回调函数（异步存储时尤其有用）
+  onceDone: (isSuccess: boolean, isCloud: boolean)=>unknown,
+}>
+```
 
 调用 `save` 或 `lazySave` 来存储已设定的数据到本地或者云端或两者都有。
 
@@ -201,10 +230,16 @@ cabinetIns.save({
 配置外部存储详见: [外部存储XHR通信配置](#外部存储xhr通信配置)
 
 
-### Destory
+### Destroy
 
-为避免内存泄漏，如果你只是在周期内临时使用一个`Lycabinet`实例, 
-那么你始终应该在丢弃它时手动调用 `destroy()` 方法以便于JS GC回收内存。
+```ts
+function destroy(autoClear: boolean=false);
+```
+
+为避免内存泄漏，当你不再使用一个`Lycabinet`实例时, 
+你始终应该在丢弃它时手动调用 `destroy()` 方法以便于JS GC回收内存。
+
+注意: 如果给`destory`方法传递`true`选项，这将顺带清除掉本地存储的数据。
 
 
 ### Options
@@ -627,11 +662,34 @@ you can consider this. The package size is reduced by almost half.
 ### Observer
 
 使用`initObserver(options)`来激活观察者插件，使数据对象具有响应性。
-这能监听所有在数据对象上的改动并自动保存。
+这能监听所有在数据对象上的改动并自动保存，默认使用`lazySave`进行懒保存。
+
 并且具有响应性的对象将会被额外添加`$addListener`, `$removeListener`方法用于对其进行添加自定义的监听操作。
 
-暴露`$set`至实例对象与构造对象，用于为目标(路径)对象添加响应性。
+暴露`$active`至实例对象与构造对象，用于为目标(路径)对象添加响应性。
 暴露`$get`至实例对象与构造对象，用于读取目标路径的内容(相当于Utils中的curveGet方法)。
+
+还记得之前$get的用法的示例吗？继续这里给出$active的用法:
+```js
+cabinetIns.$active("info.private"); // 可设定一个更深的对象链上的值，不冲突时将会自动创建
+// 此时内部cabinet的值为:
+// {
+//   "info",{
+//     age: 5,
+//     weight: 30,
+//     email: "zs@gmail.com",
+//     private: {
+//     }
+//   },
+//   ...
+// }
+const prop = cabinetIns.$get("info.private");
+var handle = (prop, nVal, oVal)=>{console.log(`prop ${prop} is changed from ${oVal} to ${nVal} on info.private!`)}
+prop.$addListener(handle); // Add changes listener by calling the non-iterable methods.
+prop.phone = 80086;
+// => (auto log) 
+// prop phone is changed from undefined to 80086 on info.private!
+```
 
 
 ### Filter

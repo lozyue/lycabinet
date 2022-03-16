@@ -83,7 +83,8 @@ function CustomFilter(cabinet, Includes, Excludes){
     let current = excludesKeyMap[index] = associatedKey.split(".");
     let pointer = currentStore;
     for(let i=0; i<current.length; i++){
-      console.log({pointer, current: current[i]});
+      DEBUG && console.log({pointer, current: current[i]});
+      
       if(is_Defined(pointer[current[i]]) ){
         // find the target.
         if(i === current.length-1){

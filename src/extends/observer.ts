@@ -62,10 +62,6 @@ export function addObserver(Lycabinet){
     });
   };
 
-  Lycabinet.$get = function(target: Object, pathList: string[]){
-    return curveGet(target, pathList);
-  }
-
   /**
    * Makes the target to be reactive
    * If the target path is not defined,
@@ -75,10 +71,6 @@ export function addObserver(Lycabinet){
    */ 
   Proto.$active = function(pathName: string, deep=false, shallow =true){
     return Lycabinet.$active(this.__storage, pathName.split('.'), deep, shallow);
-  }
-  // Makes the target to be reactive
-  Proto.$get = function(pathName: string){
-    return curveGet(this.__storage, pathName.split('.') );
   }
 };
 

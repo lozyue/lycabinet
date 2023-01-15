@@ -37,6 +37,16 @@ Using jsDelivr cdn:
 <script src="https://cdn.jsdelivr.net/npm/lycabinet/dist/lycabinet.light.min.js"></script>
 ```
 
+Using unpkg cdn:
+
+```html
+<!-- Full build -->
+<script src="https://unpkg.com/lycabinet@0.6.1/dist/lycabinet.min.js"></script>
+
+<!-- Light version -->
+<script src="https://unpkg.com/lycabinet@0.6.1/dist/lycabinet.light.min.js"></script>
+```
+
 
 ## Usage
 

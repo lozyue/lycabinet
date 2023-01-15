@@ -9,7 +9,7 @@
 import { ConstructOptions, AccessOptions, SubSet } from '@/typings/lycabinet';
 import * as _STATUS from '@/utils/status';
 import { 
-  deepAssign, arbitraryFree, 
+  deepAssign, arbitraryFree, curveGet, curveSet,
   is_Defined, is_PlainObject, is_Empty, is_String,
   LogToken, DEBUG, deepConditionalAssign, 
 } from '@/utils/util';
@@ -75,11 +75,10 @@ export function InitCore(Lycabinet){
   /**
    * Initialize the cabinet storage before 'CURD' manipulation.
    * If autoload is not setted, you should call this manually.
-   * Todo: add reduplicate._init check and warning.
    */
-  Proto._init = function(cabinet = null){
+  Proto._init = function(cabinet:null|Object = null){
     const options = this.options;
-    cabinet = cabinet || options.initStorage || Object.create(null);
+    cabinet = (cabinet || options.initStorage || Object.create(null)) as Object;
 
     // write protection backflow
     const writeBackflow = function(){
@@ -114,7 +113,7 @@ export function InitCore(Lycabinet){
     this._trigger("mounted"); // Interior cabinet access is attainable.
 
     if(!isLoadFromCache){
-      // Auto load. Only when the cabinet in using is private.
+      // Auto load. Only when the cabinet is in private using.
       if(options.autoload) this.load(); // default using shallow assign.
       else this.status = _STATUS.IDLE; // Amend the status.
     } else {
@@ -133,32 +132,32 @@ export function InitCore(Lycabinet){
   /**
    * Set an item with key.
    * Added write protection on stage of loading and clearing.
-   * @param {*} key 
+   * @param {*} keys 
    * @param {*} value 
    */
-  Proto.set = function(key, value){
+  Proto.set = function(keys, value){
     const MutexStatus = [_STATUS.LOADING, _STATUS.CLEARING];
     // add write protection.    
     if(MutexStatus.indexOf(this.status) > -1){
       this._trigger("writeLock");
       this.__tempStorage = this.__tempStorage || (this.__tempStorage = Object.create(null));
-      this.__tempStorage[key] = value;
+      curveSet(this.__tempStorage, keys.split('.'), value);
       return this;
     }
 
-    this.__storage[key] = value;
-    this._trigger('setItem', key, value);
+    curveSet(this.__storage, keys.split('.'), value);
+    this._trigger('setItem', keys, value);
     return this;
   };
 
   /**
    * Get the value of an item by key.
    * Please don't read from loading and clearing stream.
-   * @param {*} key 
+   * @param {*} keys support dot-split obj pathes
    */
-  Proto.get = function(key){
-    let backValue = this.__storage[key];
-    this._trigger('getItem', key, backValue);
+  Proto.get = function(keys){
+    let backValue = curveGet(this.__storage, keys.split('.'));
+    this._trigger('getItem', keys, backValue);
     return backValue;
   }
 
@@ -396,7 +395,7 @@ export function InitCore(Lycabinet){
       }
     }
 
-    // handle this async or asyn easily.
+    // handle this async or sync easily.
     try{
       localSave();
       if(onCloud) 
@@ -411,7 +410,7 @@ export function InitCore(Lycabinet){
   }
   
   /**
-   * Map methods support.
+   * Foreach methods support.
    * Iterate the first hierarchy with callback.
    * @param {Function: (item, key, cabinet)=>any }} callback with two params
    */
@@ -426,9 +425,10 @@ export function InitCore(Lycabinet){
   }
 
   /**
-   * Foreach methods support.
+   * Map methods support.
    * Iterate the first hierarchy with callback.
    * @param {Function: (item, key, cabinet)=>any }} callback  with two params
+   * @return { Object } cabinet
    */
   Proto.map = function(callback: (item: any, key: string, cabinet: Object)=>any){
     let item;
@@ -437,7 +437,7 @@ export function InitCore(Lycabinet){
       item = cabinet[key];
       cabinet[key] = callback(item, key, cabinet); // only two params.
     }
-    return this;
+    return cabinet;
   }
 
   /**

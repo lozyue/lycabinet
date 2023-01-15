@@ -11,18 +11,25 @@ export function InitLazyDepartment(Lycabinet){
    * The params is the same to save methods.
    */
   Lycabinet.prototype.lazySave = (function(){
-    var lastTime = 0;
+    var lastTime = 0; // throttle
+    var timerHandle: NodeJS.Timeout; // debounce
     return function(...params){
       var nowTime = new Date().getTime();
       // The gap is not so accurate but enough.
-      let judge = nowTime - lastTime > 5000; //this.options.lazyPeriod;
+      let judge = (nowTime - lastTime) > this.options.lazyPeriod;
       this._trigger("lazySave", judge);
+
+      clearTimeout(timerHandle);
       if (judge) {
-        lastTime = nowTime; // first!
         // Use default settings
         DEBUG && console.log("Lazy executed!", nowTime, lastTime, judge)
         this.save(...params);
+      } else {
+        timerHandle = setTimeout(()=>{
+          this.save(...params);
+        }, nowTime - lastTime);
       }
+      lastTime = nowTime;
       return this;
     }
   })();

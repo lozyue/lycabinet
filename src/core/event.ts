@@ -72,8 +72,8 @@ export function InitEventSystem(Lycabinet){
         return ;
       }
       var handleFunc = function(...params){
-        func.apply(this, params);
         this._off(name, handleFunc);
+        func.apply(this, params);
       }; 
       this._on(name, handleFunc);
     };

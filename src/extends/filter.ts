@@ -16,7 +16,7 @@ export function addFilter(Lycabinet){
   Lycabinet.mixin(function(cabinetIns){
     const opt = cabinetIns.options;
     if(opt.includes || opt.excludes){
-      cabinetIns._once("mounted", ()=>{
+      cabinetIns._ready("mounted", ()=>{
         cabinetIns.setFilter(); // auto set.
       });
     }

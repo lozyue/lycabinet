@@ -7,8 +7,8 @@
  * // Existed instance of Laction
  * lactionIns.use(Lycabinet);
  * 
- * When enabled immbedding, you should manually call the `destroy` method
- *  to discard the instance(Especially there is not only one).
+ * When immbedding enabled, you should manually call the `destroy` method
+ *  to discard the instance(Especially there is more than one instance).
  */
 
 import { DEBUG, deepSupplement } from "../utils/util";
@@ -41,10 +41,7 @@ export function initImbedding(Lycabinet){
           // apply period debounce.
           debounce: true, 
           // level: 3, // 1 Root 消息级钩子 // 默认普通消息
-          action: (...params)=>{
-            // Fix a big trouble of save action rewrite with laction if there are multi-instances.
-            // console.log(lycabinetIns)
-            
+          action: (...params)=>{            
             lycabinetIns.save(...params) 
           },
         },

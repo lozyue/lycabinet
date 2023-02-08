@@ -63,7 +63,7 @@ export function InitEventSystem(Lycabinet){
           : null;
     };
   
-    _self._once = function(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean = false){
+    _self._ready = function(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean = false){
       const subs = subscriptions[name] || (subscriptions[name] = []);
       if(subs._counter && instantOnTriggered!==false 
         && _self._isHappened(name, ~~instantOnTriggered) 
@@ -77,10 +77,24 @@ export function InitEventSystem(Lycabinet){
       }; 
       this._on(name, handleFunc);
     };
+    
+    _self._next = function(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean = false){
+      const subs = subscriptions[name] || (subscriptions[name] = []);
+      var handleFunc = function(...params){
+        this._off(name, handleFunc);
+        func.apply(this, params);
+      }; 
+      this._on(name, handleFunc);
+    };
 
     _self._isHappened = function(name: CabinetEventType, counts: number=1){
       const subs = (subscriptions[name] || (subscriptions[name] = []));
       return subs._counter >= counts;
+    }
+    
+    _self._count = function(name: CabinetEventType){
+      const subs = (subscriptions[name] || (subscriptions[name] = []));
+      return subs._counter;
     }
   
     // for Debug

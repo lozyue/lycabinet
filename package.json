@@ -1,6 +1,6 @@
 {
   "name": "lycabinet",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "A simple small JSON Object storage helper with good performance.",
   "scripts": {
     "start": "npm run dev",
@@ -50,7 +50,7 @@
   "bundlesize": [
     {
       "path": "./dist/lycabinet.min.js",
-      "threshold": "13kB"
+      "threshold": "14kB"
     },{
       "path": "./dist/lycabinet.light.min.js",
       "threshold": "7kB"

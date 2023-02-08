@@ -20,15 +20,15 @@ import { addZip } from './extends/zip';
 
 function Lycabinet(...options){
   if (process.env.NODE_ENV !== 'production' && !(this instanceof Lycabinet) ) {
-    (global.warn || console.warn)('Lycabinet is a constructor and should be called with the `new` keyword');
+    (console.warn || global && global.warn)('Lycabinet is a constructor and should be called with the `new` keyword');
     return null;
   }
   this.__init.apply(this, options);
 }
 
-InitStore(Lycabinet);
 InitMixin(Lycabinet);
 InitEventSystem(Lycabinet);
+InitStore(Lycabinet);
 InitCore(Lycabinet);
 InitLazyDepartment(Lycabinet);
 

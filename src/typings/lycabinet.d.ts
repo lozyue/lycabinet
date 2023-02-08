@@ -71,9 +71,12 @@ export interface LycabinetInstance {
   // Event hub
   _on(name: CabinetEventType, func: Function);
   _off(name: CabinetEventType, handle: Function);
-  _once(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean);
+  _ready(name: CabinetEventType, func: Function, instantOnTriggered: number|boolean);
+  _next(name: CabinetEventType, func: Function); // Previous name: `_once`
   _isHappened(name: CabinetEventType, counts: number);
+  _count(name: CabinetEventType): number;
   _trigger(name: CabinetEventType, ...params:any);
+  
   // Cabinet
   getCabinet(): unknown; // Return cabinet of current instance.
   getStore(): unknown; // Return the global shared cabinet whose root name is same to current instance.

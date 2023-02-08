@@ -7,6 +7,7 @@ import { DEBUG, is_Defined, is_PlainObject } from "../utils/util";
 
 export function InitStore(Lycabinet){
   const __cabinet = Object.create(null);
+  const __insTable = Object.create(null);
   DEBUG && (window["__cabinet"] = __cabinet);
   const Proto = Lycabinet.prototype;
 
@@ -55,6 +56,7 @@ export function InitStore(Lycabinet){
     if(this.options.useSharedCabinet 
       || !this.options.shareCabinet 
       || !this.isIdentical()
+      || __insTable[this.__root].size<=0
     ) return false;
     __cabinet[this.__root] = void 0;
     return true;
@@ -66,5 +68,19 @@ export function InitStore(Lycabinet){
 
   DEBUG && (Lycabinet.$getStore = function(root: string){
     return __cabinet[root];
+  });
+
+  Lycabinet.mixin((cabinetIns)=>{
+    cabinetIns._on("created", ()=>{
+      if(!__insTable[cabinetIns.__root])
+        __insTable[cabinetIns.__root] = new Set();
+      __insTable[cabinetIns.__root].add(cabinetIns);
+    });
+    
+    cabinetIns._on("destoryed", ()=>{
+      __insTable[cabinetIns.__root].delete(cabinetIns);
+      if(__insTable[cabinetIns.__root].size<=0)
+        __insTable[cabinetIns.__root] = void 0;
+    });
   });
 }

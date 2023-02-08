@@ -7,16 +7,16 @@ A slight JSON Type Object storage helper with good performance works in the brow
 
 ## Description
 
-一个性能还不错的轻量级JSON对象数据存储辅助类。
+基于Storage对象的Browser端存储辅助工具。
 
-支持存储 JSON 原生支持的基本数据类型。
+特性：
 
-提供 lazy 系列方法, 可以用于频繁修改场景以提高性能。
-
-目前支持 包括本地存储 LocalStorage / SessionStorage等 和自定义外部 API 存储以及两种并行的存储模式。
-
-能够在有多个页面的时候自动同步修改更新数据。
-甚至有简单的状态管理功能。
+- 轻量高效
+- 支持JSON存储的数据类型
+- 性能优化：自带lazy系列方法支持节流防抖控制
+- 跨标签页自动同步数据
+- 全局存储实例共享，保持一致性
+- 可配置异步存储接口调用，具有简单状态管理功能
 
 
 ## Installing
@@ -41,10 +41,10 @@ Using unpkg cdn:
 
 ```html
 <!-- Full build -->
-<script src="https://unpkg.com/lycabinet@0.6.1/dist/lycabinet.min.js"></script>
+<script src="https://unpkg.com/lycabinet@latest/dist/lycabinet.min.js"></script>
 
 <!-- Light version -->
-<script src="https://unpkg.com/lycabinet@0.6.1/dist/lycabinet.light.min.js"></script>
+<script src="https://unpkg.com/lycabinet@latest/dist/lycabinet.light.min.js"></script>
 ```
 
 
@@ -250,6 +250,65 @@ function destroy(autoClear: boolean=false);
 你始终应该在丢弃它时手动调用 `destroy()` 方法以便于JS GC回收内存。
 
 注意: 如果给`destory`方法传递`true`选项，这将顺带清除掉本地存储的数据。
+
+
+### Use Lycabinet in Vue
+
+在Vue中要存储的数据通常是响应式对象，并且可能需要在不同页面间共享。
+
+```js
+import { reactive, watch } from "vue";
+export {
+  setup(){
+    const userSettings = reactive({
+      theme: "dark",
+      language: "zh",
+      autoplay: fasle,
+      autoupdate: false,
+    });
+  }
+}
+```
+如上我们有一个响应式数据`userSettings`需要进行Storage存储：
+
+可以在初始化时将其传入`initStorage`选项，并在userSettings发生变动时调用保存。
+```js
+// In setup function!
+
+const cabinetIns1 = new Lycabinet("settings", {
+  initStorage: userSettings,
+});
+
+// Watch it
+watch(userSettings, ()=>{
+  cabinetIns1.save(); // If saving the data isn't so preempting, you can use lazySave instead.
+});
+```
+
+后续对`userSettings`对象的改动便可触发自动保存，统一了数据源规范。
+
+**共享cabinet**
+
+在默认配置下，该userSettings对象已经被Lycabinet添加缓存共享。
+
+如果在另一个组件中需要读取存储的数据`userSettings`:
+
+```
+const cabinetIns2 = new Lycabinet("settings");
+// cabinetIns2.getCabinet()===userSettings
+// => true
+```
+
+cabinetIns2获得的存储对象就是userSettings并且具有响应性。
+
+需要注意：
+如果cabinetIns1未调用destory方法，那么此时Lycabinet实例可以承担组件间传递数据的作用，免去了provide和inject调用。
+
+但要这么做，那么请保证cabinetIns2所在的组件要先于cabinetIns1所在的组件销毁。
+
+即：最佳实践是在全局组件或极大父组件中先实例化而后再子组件创建新实例。
+
+如果在创建cabinetIns2时cabinetIns1已经销毁了（调用过destory方法），那么cabinetIns2创建的cabinet将是一个从本地Storage解析中创建出来的普通对象。其将不具有响应性。
 
 
 ### Options
@@ -492,12 +551,13 @@ new Lycabinet("rootName", {
 
 ## Advance
 
+### Use with LactionJS
+
 与 [LactionJS](https://github.com/lozyue/laction) 共同使用
 
 升级 lazy 系列方法的性能表现。
 
-
-在初始化仅需调用一下函数即可完成
+在使用Lycabinet前将其在laction实例中传入并调用use函数即可：
 ```js
 import Lycabinet from 'lycabinet';
 import Laction from 'laction';
@@ -597,7 +657,7 @@ cabinetIns._on("loaded", ()=>{
 
 ### 事件 (Event)
 
-Lycabinet 内置了一套事件系统，你可以通过使用 `_on`, `_once`, 来监听事件。
+Lycabinet 内置了一套事件系统，你可以通过使用 `_on`, `_ready`, 来监听事件。
 用 `_off` 来取消`_on`监听的事件, 用 `_trigger` 来自定义触发事件。
 
 对于需要判断一个事件是否已经触发，可以使用 `_isHappened` 方法。

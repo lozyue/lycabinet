@@ -20,14 +20,12 @@ EnvAssociate.Light = true;
  */
 const InitEventSystem = function(Lycabinet){
   const Protos = Lycabinet.prototype;
-  const FakeFunc = new Function();
+  const NoopFunc = Function();
 
-  Protos._isHappened = FakeFunc;
-  Protos._setlog = FakeFunc;
-  Protos._once = FakeFunc;
-  Protos._trigger = FakeFunc;
-  Protos._off = FakeFunc;
-  Protos._on = FakeFunc;
+  const MethodList = ["isHappened","setlog","ready","next","count","trigger","off","on"];
+  MethodList.forEach(mtd => {
+    Protos['_'+mtd] = NoopFunc;
+  });
 }
 
 

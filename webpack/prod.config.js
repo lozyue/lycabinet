@@ -9,19 +9,43 @@ var prodConfig = {
   devtool: 'source-map', // source map
 
   entry: {
-    lycabinet: './src/index',
-    "lycabinet.light": './src/light',
+    "lycabinet": {
+      import: './src/index',
+      library: {
+        name: 'Lycabinet',
+        type: 'umd', 
+        umdNamedDefine: true,
+        export: 'default',
+      }, 
+    },
+    "lycabinet.light": {
+      import: './src/light',
+      library: {
+        name: "Lycabinet",
+        type: 'umd', 
+        umdNamedDefine: true,
+        export: 'default',
+      }
+    },
+    "lycabinet.esm": {
+      import: './src/index',
+      library: {
+        // name: "Lycabinet", // Must keep unset in module type.
+        type: "module",
+        // export: 'default',
+      }
+    },
+    "lycabinet.light.esm": {
+      import: './src/light',
+      library: {
+        type: "module",
+      }
+    }
   },
 
   output: {
     path: path.resolve(__dirname, '..', 'dist'),
     filename: '[name].min.js',
-    library: {
-      name: 'Lycabinet',
-      type: 'umd', 
-      umdNamedDefine: true,
-      export: 'default',
-    }, 
     environment: {
       arrowFunction: true,
     },
@@ -78,7 +102,10 @@ var prodConfig = {
         LYCABINET_VERSION: `"${require('../package.json').version}"`,
         // GIT_HASH: JSON.stringify(gitRevisionPlugin.version()),
     }),
-  ]
+  ],
+  experiments: {
+    outputModule: true,
+  }
 };
 
 prodConfig = deepAssign(baseConfig, prodConfig);
